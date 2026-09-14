@@ -1,5 +1,5 @@
 const SUPABASE_URL =
-  "https://supabase.com/dashboard/project/gigcjdhnnjnrojentaev";
+  "https://gigcjdhnnjnrojentaev.supabase.co/rest/v1/";
 
 
 const SUPABASE_KEY =
@@ -9,5 +9,5 @@ const SUPABASE_KEY =
 const supabaseClient =
   window.supabase.createClient(
     SUPABASE_URL,
-    SUPABASE_KEY
+    SUPABASE_KEYs
   );

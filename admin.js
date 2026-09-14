@@ -38,60 +38,27 @@ const logoutButton =
   );
 
 
-loginForm.addEventListener(
-  "submit",
-  async function(event) {
+loginForm.addEventListener("submit", async function(event) {
+  event.preventDefault();
 
-    event.preventDefault();
+  const email = document.getElementById("adminEmail").value;
+  const password = document.getElementById("adminPassword").value;
 
+  loginMessage.textContent = "Iniciando sesión...";
 
-    const email =
-      document.getElementById(
-        "adminEmail"
-      ).value;
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
 
-
-    const password =
-      document.getElementById(
-        "adminPassword"
-      ).value;
-
-
-    loginMessage.textContent =
-      "Iniciando sesión...";
-
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient.auth
-        .signInWithPassword({
-
-          email: email,
-
-          password: password
-
-        });
-
-
-    if (error) {
-
-      console.error(error);
-
-      loginMessage.textContent =
-        "Correo o contraseña incorrectos.";
-
-      return;
-
-    }
-
-
-    await verifyAdmin(data.user);
-
+  if (error) {
+    console.error("Error exacto de Auth:", error.message);
+    loginMessage.textContent = `Error: ${error.message}`;
+    return;
   }
 
-);
+  await verifyAdmin(data.user);
+});
 
 
 
