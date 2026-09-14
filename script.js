@@ -1,15 +1,78 @@
-const form = document.getElementById("registrationForm");
-const successMessage = document.getElementById("successMessage");
+const form =
+  document.getElementById("registrationForm");
 
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
+      
+const successMessage =
+  document.getElementById("successMessage");
 
-  const data = new FormData(form);
-  const nombre = data.get("nombre");
-  const gamertag = data.get("gamertag");
 
-  successMessage.textContent =
-    `¡Registro recibido, ${nombre}! Tu gamertag "${gamertag}" quedó listo para la Copa Raptor 2026.`;
 
-  form.reset();
-});
+form.addEventListener(
+  "submit",
+  async function(event) {
+
+    event.preventDefault();
+
+
+    const formData =
+      new FormData(form);
+
+
+    const participante = {
+
+      nombre:
+        formData.get("nombre"),
+
+      gamertag:
+        formData.get("gamertag"),
+
+      correo:
+        formData.get("correo"),
+
+      edad:
+        Number(formData.get("edad")),
+
+      personaje:
+        formData.get("personaje"),
+
+      ciudad:
+        formData.get("ciudad"),
+
+      espiritu:
+        formData.get("espiritu")
+
+    };
+
+
+    successMessage.textContent =
+      "Enviando inscripción...";
+
+
+    const {
+      error
+    } = await supabaseClient
+      .from("participants")
+      .insert([participante]);
+
+
+    if (error) {
+
+      console.error(error);
+
+
+      successMessage.textContent =
+        "No se pudo completar el registro. Intenta nuevamente.";
+
+      return;
+
+    }
+
+
+    successMessage.textContent =
+      "¡Registro completado correctamente!";
+
+
+    form.reset();
+
+  }
+);

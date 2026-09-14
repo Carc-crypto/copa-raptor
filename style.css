@@ -112,9 +112,7 @@ a {
 }
 
 
-/* ========================
-   HEADER
-======================== */
+
 
 .site-header {
 
@@ -208,9 +206,6 @@ nav a:hover {
 }
 
 
-/* ========================
-   HERO
-======================== */
 
 .hero {
 
@@ -257,13 +252,6 @@ nav a:hover {
 }
 
 
-/*
-  NUEVA FUENTE DEL TÍTULO
-
-  Cinzel se utiliza para que el título
-  tenga una apariencia más elegante,
-  pesada y parecida al texto del logo.
-*/
 
 h1 {
 
@@ -484,9 +472,6 @@ h1 span {
 }
 
 
-/* ========================
-   SECCIONES
-======================== */
 
 .section {
 
@@ -1082,179 +1067,7 @@ select:focus {
 }
 
 
-/* ========================
-   PARTICIPANTES
-======================== */
 
-.participants-section {
-
-  border-top:
-    1px solid
-    rgba(245,181,46,.08);
-
-}
-
-
-.participants-counter {
-
-  max-width: 900px;
-
-  margin: 0 auto 30px;
-
-  padding: 20px;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  background:
-    rgba(5,17,30,.9);
-
-  border:
-    1px solid
-    var(--border);
-
-}
-
-
-.participants-counter span {
-
-  color: var(--muted);
-
-  font-size: 11px;
-
-  letter-spacing: 2px;
-
-}
-
-
-.participants-counter strong {
-
-  color: var(--gold);
-
-  font-size: 30px;
-
-}
-
-
-.participants-list {
-
-  max-width: 900px;
-
-  margin: auto;
-
-  display: grid;
-
-  grid-template-columns:
-    repeat(2,1fr);
-
-  gap: 15px;
-
-}
-
-
-.participant-card {
-
-  padding: 20px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(9,28,48,.94),
-      rgba(3,12,23,.94)
-    );
-
-  border:
-    1px solid
-    rgba(245,181,46,.25);
-
-}
-
-
-.participant-number {
-
-  color:
-    var(--gold);
-
-  font-size: 11px;
-
-  margin-bottom: 8px;
-
-}
-
-
-.participant-name {
-
-  font-size: 17px;
-
-  font-weight: 800;
-
-}
-
-
-.participant-gamertag {
-
-  color:
-    var(--gold-light);
-
-  margin-top: 7px;
-
-  font-size: 12px;
-
-}
-
-
-.participant-details {
-
-  margin-top: 12px;
-
-  color:
-    var(--muted);
-
-  font:
-    13px/1.6
-    Arial,
-    sans-serif;
-
-}
-
-
-.delete-button {
-
-  display: block;
-
-  margin: 30px auto 0;
-
-  padding: 12px 18px;
-
-  border:
-    1px solid
-    rgba(255,80,80,.5);
-
-  background:
-    transparent;
-
-  color:
-    #ff9c9c;
-
-  cursor: pointer;
-
-  font:
-    700 10px
-    "Orbitron",
-    sans-serif;
-
-}
-
-
-.delete-button:hover {
-
-  background:
-    rgba(255,80,80,.08);
-
-}
 
 
 /* ========================
@@ -1430,11 +1243,7 @@ footer p {
   }
 
 
-  .participants-list {
-
-    grid-template-columns: 1fr;
-
-  }
+  
 
 
   footer {
