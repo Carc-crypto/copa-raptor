@@ -347,5 +347,129 @@ async function checkSession() {
 
 }
 
-
 checkSession();
+
+const STAGES = [
+  { name: "Campo de batalla", img: "battlefield.jpg" },
+  { name: "Pequeño campo de batalla", img: "small battlefield.jpg" },
+  { name: "Destino final", img: "final destination.jpg" },
+  { name: "Pueblo Smash", img: "smashville.jpg" },
+  { name: "Estadio Pokémon 2", img: "pokemon stadium 2.jpg" },
+  { name: "Sobrevolando el pueblo", img: "town and city.jpg" },
+  { name: "Yoshi's Story", img: "yoshi's story.jpg" },
+  { name: "Bastión Hueco", img: "hollow bastion.jpg" },
+  { name: "Liga Pokémon de Kalos", img: "kalos pokemon league.jpg" }
+];
+
+
+let currentSetId = null;
+let bannedStages = [];
+let selectedStage = null;
+
+// Cargar Brackets al iniciar
+document.addEventListener("DOMContentLoaded", () => {
+  loadBrackets();
+
+  const btnGen = document.getElementById("btn-generate-brackets");
+  if (btnGen) btnGen.addEventListener("click", generateInitialBrackets);
+});
+
+// 1. Cargar Brackets de Supabase
+async function loadBrackets() {
+  const { data: sets, error } = await supabaseClient
+    .from("tournament_sets")
+    .select(`
+      *,
+      player1:player1_id(id, gamertag),
+      player2:player2_id(id, gamertag),
+      winner:winner_id(id, gamertag)
+    `)
+    .order("id");
+
+  if (error) {
+    console.error("Error cargando brackets:", error);
+    return;
+  }
+
+  renderBracketContainer("winners-container", sets.filter(s => s.bracket_type === 'winners'));
+  renderBracketContainer("losers-container", sets.filter(s => s.bracket_type === 'losers'));
+  renderBracketContainer("grand-finals-container", sets.filter(s => s.bracket_type === 'grand_finals'));
+}
+
+// 2. Renderizar Sets en Pantalla
+function renderBracketContainer(containerId, sets) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (sets.length === 0) {
+    container.innerHTML = `
+      <div class="empty-bracket">
+        No hay sets en este bracket.
+      </div>
+    `;
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+
+  sets.forEach((set) => {
+    const setCard = document.createElement("div");
+    setCard.className = "bracket-set";
+    setCard.innerHTML = `
+      <div class="players">
+        <span>${set.player1 ? set.player1.gamertag : "TBD"}</span>
+        <span>vs</span>
+        <span>${set.player2 ? set.player2.gamertag : "TBD"}</span>
+      </div>
+      <div class="winner">
+        ${set.winner ? set.winner.gamertag : "Pendiente"}
+      </div>
+    `;
+    fragment.appendChild(setCard);
+  });
+
+  container.appendChild(fragment);
+}
+// Función que dibuja las tarjetas de las partidas/sets en el panel
+function renderSets(sets) {
+  const container = document.getElementById("sets-container");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (!sets || sets.length === 0) {
+    container.innerHTML = `
+      <div class="empty-set-list">No hay sets disponibles en esta fase.</div>
+    `;
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+
+  sets.forEach((set) => {
+    const p1 = set.player1 ? set.player1.gamertag : "TBD";
+    const p2 = set.player2 ? set.player2.gamertag : "TBD";
+    const card = document.createElement("div");
+    card.style = "background:#2b2b36; margin: 10px 0; padding: 12px; border-radius: 6px; border-left: 4px solid #f1c40f; color: #fff;";
+
+    const banText = set.status !== "completed" && set.player1_id && set.player2_id
+      ? "<div>⚔️ Baneo / Escenario</div>"
+      : "";
+
+    const winnerText = set.winner
+      ? `<div>🏆 Ganador: ${set.winner.gamertag}</div>`
+      : "";
+
+    card.innerHTML = `
+      <div>Ronda ${set.round_number} — Estado: ${set.status}</div>
+      <div>${p1} (${set.score_p1}) vs ${p2} (${set.score_p2})</div>
+      ${banText}
+      ${winnerText}
+    `;
+
+    fragment.appendChild(card);
+  });
+
+  container.appendChild(fragment);
+}
