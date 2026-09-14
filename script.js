@@ -1,77 +1,46 @@
-const participantForm = document.getElementById("tu-formulario-id");
 
+const participantForm = document.getElementById("participantForm") || document.querySelector("form");
+const successMessage = document.getElementById("successMessage");
 
-const successMessage =
-  document.getElementById("successMessage");
-
-  
-
-form.addEventListener(
-  "submit",
-  async function(event) {
-
+if (participantForm) {
+  participantForm.addEventListener("submit", async function (event) {
     event.preventDefault();
 
-
-    const formData =
-      new FormData(form);
-
+   
+    const formData = new FormData(participantForm);
 
     const participante = {
-
-      nombre:
-        formData.get("nombre"),
-
-      gamertag:
-        formData.get("gamertag"),
-
-      correo:
-        formData.get("correo"),
-
-      edad:
-        Number(formData.get("edad")),
-
-      personaje:
-        formData.get("personaje"),
-
-      ciudad:
-        formData.get("ciudad"),
-
-      espiritu:
-        formData.get("espiritu")
-
+      nombre: formData.get("nombre"),
+      gamertag: formData.get("gamertag"),
+      correo: formData.get("correo"),
+      edad: Number(formData.get("edad")),
+      personaje: formData.get("personaje"),
+      ciudad: formData.get("ciudad"),
+      espiritu: formData.get("espiritu")
     };
 
+    if (successMessage) {
+      successMessage.textContent = "Enviando inscripción...";
+    }
 
-    successMessage.textContent =
-      "Enviando inscripción...";
-
-
-    const {
-      error
-    } = await supabaseClient
+    // 3. Insertar en Supabase
+    const { error } = await supabaseClient
       .from("participants")
       .insert([participante]);
 
-
     if (error) {
-
       console.error(error);
-
-
-      successMessage.textContent =
-        "No se pudo completar el registro. Intenta nuevamente.";
-
+      if (successMessage) {
+        successMessage.textContent = "No se pudo completar el registro. Intenta nuevamente.";
+      }
       return;
-
     }
 
+    if (successMessage) {
+      successMessage.textContent = "¡Registro completado correctamente!";
+    }
 
-    successMessage.textContent =
-      "¡Registro completado correctamente!";
-
-
-    form.reset();
-
-  }
-);
+    // 4. Limpiar el formulario usando la variable correcta
+    participantForm.reset();
+  });
+}
