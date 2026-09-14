@@ -1,11 +1,10 @@
-const form =
-  document.getElementById("registrationForm");
+const participantForm = document.getElementById("tu-formulario-id");
 
-      
+
 const successMessage =
   document.getElementById("successMessage");
 
-
+  
 
 form.addEventListener(
   "submit",
