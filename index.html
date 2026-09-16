@@ -321,14 +321,6 @@
 
         </div>
         <div> class="rule">
-          <span>
-            09
-          </span>
-
-          <p>
-            tendran 3 vidas cada uno, el que gane al mejor de 5 pasara de ronda 
-            por ronda tendran 7 minutos.
-          </p>
 
         ></div>
 
@@ -594,6 +586,33 @@
        
 
       </div>
+      < section class="player-schedule-section" 
+      style="background: #1f2833; padding: 25px; border-radius: 8px; margin: 30px 0; color: #fff;">
+< h2 style="font-family: 'Orbitron', sans-serif; color: #66fcf1; margin-top: 0;">🔍 Consultar Mis Partidas< /h2>
+< p style="font-size: 14px; color: #c5c6c7; margin-bottom: 20px;">
+Ingresa tu Gamertag para consultar tus próximos enfrentamientos en la Copa Raptor 2026.
+< /p>
+
+< div style="display: flex; gap: 10px; max-width: 500px; margin-bottom: 25px;">
+< input
+type="text"
+id="playerSearchInput"
+placeholder="Tu Gamertag (ej. RaptorMaster)"
+style="flex: 1; padding: 12px; border-radius: 5px; border: 1px solid #45a29e; background: #0b0c10; color: #fff; font-size: 14px;"
+>
+< button
+id="btnSearchPlayerSets"
+onclick="searchPlayerMatches()"
+style="background: #66fcf1; color: #0b0c10; font-family: 'Orbitron', sans-serif; font-weight: 800; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;"
+>
+BUSCAR
+< /button>
+< /div>
+
+< div id="playerSetsContainer">
+< p style="color: #888; font-size: 13px;">Ingresa tu nombre de usuario para ver tu calendario de partidas.< /p>
+< /div>
+< /section>
 
 
     </section>
