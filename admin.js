@@ -594,3 +594,188 @@ async function completeSet(setId, winnerId, loserId, scoreP1, scoreP2) {
     console.error("Error al completar el set:", err.message);
   }
 }
+async function loadBrackets() {
+  try {
+    const { data: sets, error } = await supabaseClient
+      .from("tournament_sets")
+      .select(`
+        *,
+        player1:player1_id(id, gamertag),
+        player2:player2_id(id, gamertag),
+        winner:winner_id(id, gamertag)
+      `)
+      .order("round_number", { ascending: true });
+
+    if (error) throw error;
+
+    const winnersContainer = document.getElementById("winners-container");
+    const losersContainer = document.getElementById("losers-container");
+    const grandFinalsContainer = document.getElementById("grand-finals-container");
+
+    if (!winnersContainer || !losersContainer) return;
+
+    winnersContainer.innerHTML = "";
+    losersContainer.innerHTML = "";
+    if (grandFinalsContainer) grandFinalsContainer.innerHTML = "";
+
+    if (!sets || sets.length === 0) {
+      winnersContainer.innerHTML = "No hay partidas generadas aún.";
+      losersContainer.innerHTML = "No hay partidas en Losers.";
+      return;
+    }
+
+    const winnersSets = sets.filter(s => s.bracket_type === 'winners');
+    const losersSets = sets.filter(s => s.bracket_type === 'losers');
+    const finalsSets = sets.filter(s => s.bracket_type === 'grand_finals');
+
+    renderSetsList(winnersSets, winnersContainer);
+    renderSetsList(losersSets, losersContainer);
+    if (grandFinalsContainer) renderSetsList(finalsSets, grandFinalsContainer);
+  } catch (err) {
+    console.error("Error al cargar brackets:", err.message);
+  }
+}
+
+// Renderiza cada tarjeta con botones para declarar ganador/perdedor
+function renderSetsList(sets, container) {
+if (!sets || sets.length === 0) {
+ container.innerHTML = "Sin enfrentamientos en esta sección.";
+return;
+}
+
+sets.forEach(set => {
+const p1 = set.player1 ? set.player1.gamertag : "TBD";
+const p2 = set.player2 ? set.player2.gamertag : "TBD";
+
+const card = document.createElement("div");
+card.style = "background:#12131C; margin: 10px 0; padding: 12px; border-radius: 6px; border-left: 4px solid #f1c40f; color: #fff;";
+
+// Si la partida está activa (ambos jugadores listos y no completada)
+const canDeclareWinner = set.status !== 'completed' && set.player1_id && set.player2_id;
+
+card.innerHTML = `
+Ronda ${set.round_number} — Estado: ${set.status}
+
+${p1}
+${canDeclareWinner ? `
+
+🏆 Marcar Ganador
+` : ''}
+
+${p2}
+${canDeclareWinner ? `
+
+🏆 Marcar Ganador
+` : ''}
+
+${canDeclareWinner ? `
+
+⚔️ Baneo / Escenario
+` : ''}
+
+${set.winner ? `
+
+🏆 Ganador: ${set.winner.gamertag}
+
+  ` : ''}
+`;
+
+container.appendChild(card);
+});
+}
+async function setWinner(setId, winnerId, loserId, bracketType) {
+if (!confirm("¿Confirmar este resultado?")) return;
+
+try {
+
+const { error: updateErr } = await supabaseClient
+.from("tournament_sets")
+.update({
+winner_id: winnerId,
+status: "completed"
+})
+.eq("id", setId);
+
+if (updateErr) throw updateErr;
+
+
+if (bracketType === "winners") {
+ 
+  const { data: openLoserSet } = await supabaseClient
+    .from("tournament_sets")
+    .select("*")
+    .eq("bracket_type", "losers")
+    .eq("round_number", 1)
+    .or("player1_id.is.null,player2_id.is.null")
+    .limit(1)
+    .maybeSingle();
+
+  if (openLoserSet) {
+    const slot = !openLoserSet.player1_id ? { player1_id: loserId } : { player2_id: loserId };
+    await supabaseClient
+      .from("tournament_sets")
+      .update(slot)
+      .eq("id", openLoserSet.id);
+  } else {
+    
+    await supabaseClient.from("tournament_sets").insert({
+      bracket_type: "losers",
+      round_number: 1,
+      player1_id: loserId,
+      status: "pending"
+    });
+  }
+}
+
+
+loadBrackets();
+} catch (err) {
+console.error("Error al registrar resultado:", err.message);
+alert("Ocurrió un error al guardar el resultado.");
+}
+}
+async function generateInitialBrackets() {
+if (!confirm("¿Deseas generar los Brackets con los participantes registrados?")) return;
+
+
+const { data: participants, error } = await supabaseClient
+.from("participants")
+.select("id, gamertag");
+
+if (error || !participants || participants.length < 2) {
+alert("Se necesitan al menos 2 participantes.");
+return;
+}
+
+
+await supabaseClient.from("tournament_sets").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+
+const shuffled = [...participants].sort(() => 0.5 - Math.random());
+const newSets = [];
+
+for (let i = 0; i < shuffled.length; i += 2) {
+if (shuffled[i + 1]) {
+newSets.push({
+bracket_type: 'winners',
+round_number: 1,
+player1_id: shuffled[i].id,
+player2_id: shuffled[i + 1].id,
+status: 'pending'
+});
+}
+}
+
+await supabaseClient.from("tournament_sets").insert(newSets);
+loadBrackets();
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+loadBrackets();
+
+const btnGen = document.getElementById("btn-generate-brackets");
+if (btnGen) {
+btnGen.addEventListener("click", generateInitialBrackets);
+}
+});
