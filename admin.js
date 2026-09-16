@@ -366,7 +366,7 @@ let currentSetId = null;
 let bannedStages = [];
 let selectedStage = null;
 
-// Cargar Brackets al iniciar
+
 document.addEventListener("DOMContentLoaded", () => {
   loadBrackets();
 
@@ -374,7 +374,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnGen) btnGen.addEventListener("click", generateInitialBrackets);
 });
 
-// 1. Cargar Brackets de Supabase
+
 async function loadBrackets() {
   const { data: sets, error } = await supabaseClient
     .from("tournament_sets")
@@ -396,7 +396,7 @@ async function loadBrackets() {
   renderBracketContainer("grand-finals-container", sets.filter(s => s.bracket_type === 'grand_finals'));
 }
 
-// 2. Renderizar Sets en Pantalla
+
 function renderBracketContainer(containerId, sets) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -431,7 +431,7 @@ function renderBracketContainer(containerId, sets) {
 
   container.appendChild(fragment);
 }
-// Función que dibuja las tarjetas de las partidas/sets en el panel
+
 function renderSets(sets) {
   const container = document.getElementById("sets-container");
   if (!container) return;
@@ -472,4 +472,125 @@ function renderSets(sets) {
   });
 
   container.appendChild(fragment);
+}
+async function loadBrackets() {
+  try {
+
+    const { data: sets, error } = await supabaseClient
+      .from("tournament_sets")
+      .select(`
+        *,
+        player1:player1_id(id, gamertag),
+        player2:player2_id(id, gamertag),
+        winner:winner_id(id, gamertag)
+      `)
+      .order("round_number", { ascending: true });
+
+    if (error) throw error;
+
+    
+    const winnersContainer = document.getElementById("winners-container");
+    const losersContainer = document.getElementById("losers-container");
+    const grandFinalsContainer = document.getElementById("grand-finals-container");
+
+    if (!winnersContainer || !losersContainer) return;
+
+  
+    winnersContainer.innerHTML = "";
+    losersContainer.innerHTML = "";
+    if (grandFinalsContainer) grandFinalsContainer.innerHTML = "";
+
+    if (!sets || sets.length === 0) {
+      winnersContainer.innerHTML = "No hay partidas generadas aún.";
+      losersContainer.innerHTML = "No hay partidas en Losers.";
+      return;
+    }
+
+
+    const winnersSets = sets.filter(s => s.bracket_type === 'winners');
+    const losersSets = sets.filter(s => s.bracket_type === 'losers');
+    const finalsSets = sets.filter(s => s.bracket_type === 'grand_finals');
+
+    renderSetsList(winnersSets, winnersContainer);
+    renderSetsList(losersSets, losersContainer);
+    if (grandFinalsContainer) renderSetsList(finalsSets, grandFinalsContainer);
+  } catch (err) {
+    console.error("Error al cargar brackets:", err.message);
+  }
+}
+
+
+function renderSetsList(sets, container) {
+  if (!sets || sets.length === 0) {
+    container.innerHTML = "Sin enfrentamientos en esta sección.";
+    return;
+  }
+
+  sets.forEach(set => {
+    const p1 = set.player1 ? set.player1.gamertag : "TBD";
+    const p2 = set.player2 ? set.player2.gamertag : "TBD";
+    const card = document.createElement("div");
+card.style = "background:#12131C; margin: 10px 0; padding: 12px; border-radius: 6px; border-left: 4px solid #f1c40f; color: #fff;";
+
+    card.innerHTML = `
+      <div>Ronda ${set.round_number} — Estado: ${set.status}</div>
+      <div>${p1} (${set.score_p1 || 0}) vs ${p2} (${set.score_p2 || 0})</div>
+      ${set.status !== 'completed' && set.player1_id && set.player2_id ? '<div>⚔️ Baneo / Escenario</div>' : ''}
+      ${set.winner ? `<div>🏆 Ganador: ${set.winner.gamertag}</div>` : ''}
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+async function completeSet(setId, winnerId, loserId, scoreP1, scoreP2) {
+  try {
+    
+    const { data: currentSet, error: setErr } = await supabaseClient
+      .from("tournament_sets")
+      .update({
+        winner_id: winnerId,
+        score_p1: scoreP1,
+        score_p2: scoreP2,
+        status: "completed"
+      })
+      .eq("id", setId)
+      .select()
+      .single();
+
+    if (setErr) throw setErr;
+
+    
+    if (currentSet.bracket_type === "winners") {
+      
+      const { data: loserSet } = await supabaseClient
+        .from("tournament_sets")
+        .select("*")
+        .eq("bracket_type", "losers")
+        .eq("round_number", 1)
+        .or("player1_id.is.null,player2_id.is.null")
+        .maybeSingle();
+
+      if (loserSet) {
+        
+        const slotToUpdate = !loserSet.player1_id ? { player1_id: loserId } : { player2_id: loserId };
+        await supabaseClient
+          .from("tournament_sets")
+          .update(slotToUpdate)
+          .eq("id", loserSet.id);
+      } else {
+        
+        await supabaseClient.from("tournament_sets").insert({
+          bracket_type: "losers",
+          round_number: 1,
+          player1_id: loserId,
+          status: "pending"
+        });
+      }
+    }
+
+    loadBrackets(); 
+  } catch (err) {
+    console.error("Error al completar el set:", err.message);
+  }
 }
