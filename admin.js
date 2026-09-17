@@ -154,27 +154,52 @@ console.error("Error al cargar brackets:", err.message);
 
 function renderSetsList(sets, container) {
 if (!sets || sets.length === 0) {
-container.innerHTML = "Sin enfrentamientos en esta sección.";
-return;
-}
+    container.innerHTML = "Sin enfrentamientos en esta sección.";
+    return;
+  }
 
-sets.forEach(set => {
-const p1 = set.player1 ? set.player1.gamertag : "TBD";
-const p2 = set.player2 ? set.player2.gamertag : "TBD";
-const card = document.createElement("div");
-card.style = "background:#12131C; margin: 10px 0; padding: 12px; border-radius: 6px; border-left: 4px solid #f1c40f; color: #fff;";
+  container.innerHTML = "";
 
-const canDeclareWinner = set.status !== 'completed' && set.player1_id && set.player2_id;
+  sets.forEach(set => {
+    const p1 = set.player1 ? set.player1.gamertag : "TBD";
+    const p2 = set.player2 ? set.player2.gamertag : "TBD";
+    const card = document.createElement("div");
+    card.style = "background:#12131C; margin: 10px 0; padding: 12px; border-radius: 6px; border-left: 4px solid #f1c40f; color: #fff;";
 
-card.innerHTML = `
-  <div>Ronda ${set.round_number} — Estado: ${set.status}</div>
-  <div>${p1} vs ${p2}</div>
-  ${canDeclareWinner ? `<div>⚔️ Baneo / Escenario</div>` : ''}
-  ${set.winner ? `<div>🏆 Ganador: ${set.winner.gamertag}</div>` : ''}
-`;
+    const isPending = set.status === 'pending';
+    const isInProgress = set.status === 'in_progress';
+    const isCompleted = set.status === 'completed';
+    const hasBothPlayers = set.player1_id && set.player2_id;
 
-container.appendChild(card);
-});
+    card.innerHTML = `
+      <div><strong>Ronda ${set.round_number}</strong> — Estado: <em>${set.status}</em></div>
+      <div style="font-size: 16px; font-weight: bold; margin: 8px 0;">${p1} vs ${p2}</div>
+
+      ${isPending && hasBothPlayers ? `
+        <button onclick="setMatchInProgres(${set.id})" style="background:#3498db; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-top:5px;">
+          ▶️ Marcar "En Curso"
+        </button>
+      ` : ''}
+
+      ${(isPending || isInProgress) && hasBothPlayers ? `
+        <div style="margin-top: 8px; font-size: 13px; color: #aaa;">Declarar Ganador:</div>
+        <div style="display:flex; gap:8px; margin-top:4px;">
+          <button onclick="setMatchWinner(${set.id}, '${set.player1_id}')" style="background:#2ecc71; color:#000; font-weight:bold; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">
+            🏆 ${p1}
+          </button>
+          <button onclick="setMatchWinner(${set.id}, '${set.player2_id}')" style="background:#2ecc71; color:#000; font-weight:bold; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">
+            🏆 ${p2}
+          </button>
+        </div>
+      ` : ''}
+
+      ${isCompleted && set.winner ? `
+        <div style="color:#2ecc71; font-weight:bold; margin-top:6px;">🏆 Ganador: ${set.winner.gamertag}</div>
+      ` : ''}
+    `;
+
+    container.appendChild(card);
+  });
 }
 
 async function generateInitialBrackets() {
@@ -241,3 +266,33 @@ if (btnReset) {
 btnReset.addEventListener("click", resetTournamentBrackets);
 }
 });
+async function setMatchInProgres(setId) {
+  const { error } = await supabaseClient
+    .from("tournament_sets")
+    .update({ status: "in_progress" })
+    .eq("id", setId);
+
+  if (error) {
+    alert("Error al actualizar la partida: " + error.message);
+    return;
+  }
+
+  loadBrackets();
+}
+
+async function setMatchWinner(setId, winnerId) {
+  const { error } = await supabaseClient
+    .from("tournament_sets")
+    .update({ 
+      winner_id: winnerId,
+      status: "completed" 
+    })
+    .eq("id", setId);
+
+  if (error) {
+    alert("Error al registrar ganador: " + error.message);
+    return;
+  }
+
+  loadBrackets();
+}
