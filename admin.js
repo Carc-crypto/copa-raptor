@@ -1,3 +1,24 @@
+<><div id="login-section">
+  <h1>Panel de Administración</h1>
+  <form id="loginForm">
+    <div>
+      <label for="adminEmail">Correo Electrónico:</label>
+      <input type="email" id="adminEmail" required />
+    </div>
+    <div>
+      <label for="adminPassword">Contraseña:</label>
+      <input type="password" id="adminPassword" required />
+    </div>
+    <button type="submit">Iniciar Sesión</button>
+  </form>
+</div><div id="admin-dashboard" style="display: none;">
+    <h1>Dashboard de Administración</h1>
+    <button id="logoutButton">Cerrar Sesión</button>
+    <div id="dashboardMessage"></div>
+    <div id="participantCount">0 participantes</div>
+    <div id="participantsContainer"></div>
+  </div></>
+
 const loginForm =
   document.getElementById("loginForm");
 
