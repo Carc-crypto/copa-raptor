@@ -1,110 +1,100 @@
-<!DOCTYPE html >
-<html lang="es" >
-<head >
-  <meta charset="UTF-8" >
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
   < meta name="viewport" content="width=device-width, initial-scale=1.0" >
   < title >Copa Raptor 2026 | Administrador< /title >
   < link rel="preconnect" href="https://fonts.googleapis.com" >
   < link rel="preconnect" href="https://fonts.gstatic.com" crossorigin >
   < link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Orbitron:wght@500;600;700;800;900&display=swap" rel="stylesheet" >
   < link rel="stylesheet" href="admin.css" >
-</head >
+</head>
 
-<body >
+<body>
 
-  <main class="admin-container" >
+  <main class="admin-container">
 
-    !-- 1. SECCIÓN DE INICIO DE SESIÓN -- 
-    <section id="loginSection" class="login-box" >
-      <img src="assets/copa-raptor-2026.jpeg" alt="Copa Raptor" >
-      <h1 >PANEL DE ADMINISTRADOR< /h1 >
-      <p >Copa Raptor 2026< /p >
+    <!-- 1. FORMULARIO DE LOGIN -->
+    <section id="loginSection" class="login-box">
+      <img src="assets/copa-raptor-2026.jpeg" alt="Copa Raptor">
+      <h1>PANEL DE ADMINISTRADOR</h1>
+      <p>Copa Raptor 2026</p>
 
-      <form id="loginForm" >
-        <input type="email" id="adminEmail" placeholder="Correo del administrador" required >
-        <input type="password" id="adminPassword" placeholder="Contraseña" required >
-        <button type="submit" >INICIAR SESIÓN< /button >
+      <form id="loginForm">
+        <input type="email" id="adminEmail" placeholder="Correo del administrador" required>
+        <input type="password" id="adminPassword" placeholder="Contraseña" required>
+        <button type="submit" >INICIAR SESIÓN</button>
       </form >
 
-      <p id="loginMessage" class="message" ></p >
-    </section >
+      <p id="loginMessage" class="message"></p>
+    </section>
 
-    !-- 2. PANEL PRINCIPAL (DASHBOARD) -- 
-    <section id="dashboard" class="dashboard" style="display:none;" >
+    <!-- 2. DASHBOARD COMPLETO (SÓLO SE MUESTRA AL INICIAR SESIÓN) -->
+    <section id="dashboard" class="dashboard" style="display:none;">
 
-      <div class="dashboard-header" >
-        <div >
-          <p class="eyebrow" >COPA RAPTOR 2026</p >
-          <h1 >PARTICIPANTES</h1 >
+      <div class="dashboard-header">
+        <div>
+          <p class="eyebrow">COPA RAPTOR 2026</p>
+          <h1 >PARTICIPANTES</h1>
         </div >
 
-        <button id="logoutButton" class="logout">CERRAR SESIÓN</button >
-      </div >
+        <button id="logoutButton" class="logout">CERRAR SESIÓN</button>
+      </div>
 
-      <div class="counter" >
-        <span >PARTICIPANTES REGISTRADOS</span >
-        <strong id="participantCount" >0</strong >
-      </div >
+      <div class="counter">
+        <span >PARTICIPANTES REGISTRADOS</span>
+        <strong id="participantCount" >0</strong>
+      </div>
 
-      <div id="participantsContainer" class="participants-container" >< /div >
+      <div id="participantsContainer" class="participants-container"></div>
 
-      <p id="dashboardMessage" class="message" ></p>
+      <p id="dashboardMessage" class="message"></p>
 
-      !-- SECCIÓN DE TORNEO Y BRACKETS DENTRO DEL DASHBOARD -- 
-      <div class="tournament-section" style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #1f2833;" >
-        <h2 style="font-family: 'Orbitron', sans-serif; color: #66fcf1; margin-bottom: 15px;" >GESTIÓN DE BRACKETS< /h2 >
+      !-- GESTIÓN DE BRACKETS DENTRO DEL DASHBOARD -- 
+      <div class="tournament-section" style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #1f2833;">
+        <h2 style="font-family: 'Orbitron', sans-serif; color: #66fcf1; margin-bottom: 15px;" >GESTIÓN DE BRACKETS</h2>
 
-        !-- BOTONES DE ACCIÓN -- 
-        <div style="margin-bottom: 25px; display: flex; gap: 15px; flex-wrap: wrap;" >
-          <button id="btn-generate-brackets" style="background: #f1c40f; color: #000; font-family: 'Orbitron', sans-serif; font-weight: 800; padding: 14px 28px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; letter-spacing: 1px;" >
+        <div style="margin-bottom: 25px; display: flex; gap: 15px; flex-wrap: wrap;">
+          <button id="btn-generate-brackets" style="background: #f1c40f; color: #000; font-family: 'Orbitron', sans-serif; font-weight: 800; padding: 14px 28px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; letter-spacing: 1px;">
             ⚡ GENERAR WINNERS BRACKET
-          </button >
+          </button>
 
-          <button id="btn-reset-brackets" style="background: #e94560; color: #fff; font-family: 'Orbitron', sans-serif; font-weight: 800; padding: 14px 28px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; letter-spacing: 1px;" >
+          <button id="btn-reset-brackets" style="background: #e94560; color: #fff; font-family: 'Orbitron', sans-serif; font-weight: 800; padding: 14px 28px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; letter-spacing: 1px;">
             RESETEAR TODAS LAS BRACKETS
-          </button >
-        </div >
+          </button>
+        </div>
 
-        !-- COLUMNAS DE BRACKETS -- 
         <div style="display: flex; gap: 20px; flex-wrap: wrap;" >
-          
-          !-- Winner's Bracket -- 
-          <div style="flex: 1; min-width: 320px; background: #0b0c10; padding: 15px; border-radius: 8px; border: 1px solid #4eacc5;" >
-            <h3 style="color: #4eacc5; border-bottom: 2px solid #4eacc5; padding-bottom: 8px; margin-top: 0; font-family: 'Orbitron', sans-serif;" >
+          <div style="flex: 1; min-width: 320px; background: #0b0c10; padding: 15px; border-radius: 8px; border: 1px solid #4eacc5;">
+            <h3 style="color: #4eacc5; border-bottom: 2px solid #4eacc5; padding-bottom: 8px; margin-top: 0; font-family: 'Orbitron', sans-serif;">
               🏆 Winner's Bracket
-            </h3 >
-            <div id="winners-container" >< /div >
+            </h3>
+            <div id="winners-container"></div>
           </div>
 
-          !-- Loser's Bracket -- 
           <div style="flex: 1; min-width: 320px; background: #0b0c10; padding: 15px; border-radius: 8px; border: 1px solid #e94560;">
             <h3 style="color: #e94560; border-bottom: 2px solid #e94560; padding-bottom: 8px; margin-top: 0; font-family: 'Orbitron', sans-serif;">
               🔥 Loser's Bracket
-            </h3>
+            </h3 >
             <div id="losers-container"></div>
-          </div>
+          </div >
+        </div >
 
-        </div>
-
-        !-- Grand Finals -- 
         <div style="margin-top: 20px; background: #0b0c10; padding: 15px; border-radius: 8px; border: 1px solid #f1c40f;">
           <h3 style="color: #f1c40f; border-bottom: 2px solid #f1c40f; padding-bottom: 8px; margin-top: 0; font-family: 'Orbitron', sans-serif;">
             👑 Grand Finals
-          </h3>
-          <div id="grand-finals-container" >< /div>
+          </h3 >
+          <div id="grand-finals-container"></div>
         </div>
-
       </div>
 
     </section>
 
-  </main>
+  </main >
 
-
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js" ></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" ></script>
+  <script src="supabase-config.js" ><script>
   <script src="admin.js" ></script>
 
 </body >
-</html >
+</html>
