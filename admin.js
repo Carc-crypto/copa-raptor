@@ -88,8 +88,6 @@ async function verifyAdmin(user) {
     return;
 
   }
-
-
   loginSection.style.display =
     "none";
 
@@ -826,3 +824,16 @@ console.error("Error al resetear brackets:", err.message);
 alert("Ocurrió un error al intentar resetear las brackets.");
 }
 }
+supabaseClient.auth.onAuthStateChange((event, session) => {
+const loginSection = document.getElementById("login-section");
+const adminDashboard = document.getElementById("admin-dashboard");
+
+if (session) {
+if (loginSection) loginSection.style.display = "none";
+if (adminDashboard) adminDashboard.style.display = "block";
+if (typeof loadBrackets === "function") loadBrackets();
+} else {
+if (loginSection) loginSection.style.display = "block";
+if (adminDashboard) adminDashboard.style.display = "none";
+}
+});
