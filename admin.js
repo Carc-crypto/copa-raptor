@@ -778,7 +778,6 @@ const btnGen = document.getElementById("btn-generate-brackets");
 if (btnGen) {
 btnGen.addEventListener("click", generateInitialBrackets);
 }
-});
 async function resetTournamentBrackets() {
 const confirmAction = confirm("¿Estás seguro de que deseas resetear y borrar TODAS las brackets del torneo?");
 if (!confirmAction) return;
@@ -787,15 +786,7 @@ try {
 const { error } = await supabaseClient
 .from("tournament_sets")
 .delete()
-async function resetTournamentBrackets() {
-const confirmAction = confirm("¿Estás seguro de que deseas resetear y borrar TODAS las brackets del torneo?");
-if (!confirmAction) return;
-
-try {
-const { error } = await supabaseClient
-.from("tournament_sets")
-.delete()
-.neq("id", 0);
+.not("id", "is", null);
 
 if (error) throw error;
 
@@ -809,20 +800,5 @@ if (typeof loadBrackets === "function") {
 } catch (err) {
 console.error("Error al resetear brackets:", err.message);
 alert("Ocurrió un error al intentar resetear las brackets: " + err.message);
-}
-}
-
-if (error) throw error;
-
-alert("Las brackets se han reseteado correctamente.");
-
-if (typeof loadBrackets === "function") {
-  loadBrackets();
-} else {
-  location.reload();
-}
-} catch (err) {
-console.error("Error al resetear brackets:", err.message);
-alert("Ocurrió un error al intentar resetear las brackets.");
 }
 }
