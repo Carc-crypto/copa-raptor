@@ -266,33 +266,133 @@ if (btnReset) {
 btnReset.addEventListener("click", resetTournamentBrackets);
 }
 });
-async function setMatchInProgres(setId) {
-  const { error } = await supabaseClient
+async function setMatchWinner(setId, winnerId) {
+  // 1. Obtener la información del set actual
+  const { data: currentSet, error: fetchError } = await supabaseClient
     .from("tournament_sets")
-    .update({ status: "in_progress" })
-    .eq("id", setId);
+    .select("*")
+    .eq("id", setId)
+    .single();
 
-  if (error) {
-    alert("Error al actualizar la partida: " + error.message);
+  if (fetchError || !currentSet) {
+    alert("Error al obtener la partida.");
     return;
   }
 
+  // Identificar perdedor
+  const loserId = currentSet.player1_id === winnerId ? currentSet.player2_id : currentSet.player1_id;
+
+  // 2. Marcar el set actual como completado
+  const { error: updateError } = await supabaseClient
+    .from("tournament_sets")
+    .update({ winner_id: winnerId, status: "completed" })
+    .eq("id", setId);
+
+  if (updateError) {
+    alert("Error al guardar ganador: " + updateError.message);
+    return;
+  }
+
+  // 3. Lógica de progresión en Brackets
+  if (currentSet.bracket_type === "winners") {
+    // A) Enviar perdedor a Loser's Bracket
+    await advanceOrCreateSet("losers", currentSet.round_number, loserId);
+
+    // B) Avanzar ganador a la siguiente ronda de Winners
+    await advanceOrCreateSet("winners", currentSet.round_number + 1, winnerId);
+
+  } else if (currentSet.bracket_type === "losers") {
+    // En Losers el perdedor queda eliminado. El ganador avanza a la siguiente ronda de Losers
+    await advanceOrCreateSet("losers", currentSet.round_number + 1, winnerId);
+
+  } else if (currentSet.bracket_type === "grand_finals") {
+    alert("¡Torneo Finalizado!");
+  }
+
+  // 4. Verificar si toca activar la Grand Final (Ganador Winners vs Ganador Losers)
+  await checkGrandFinalsEligibility();
+
+  // 5. Refrescar la pantalla
   loadBrackets();
 }
 
-async function setMatchWinner(setId, winnerId) {
-  const { error } = await supabaseClient
+// Función auxiliar para emparejar jugadores en la siguiente ronda
+async function advanceOrCreateSet(bracketType, targetRound, playerId) {
+  // Buscar si ya existe un set pendiente en esa ronda con espacio disponible
+  const { data: pendingSets } = await supabaseClient
     .from("tournament_sets")
-    .update({ 
-      winner_id: winnerId,
-      status: "completed" 
-    })
-    .eq("id", setId);
+    .select("*")
+    .eq("bracket_type", bracketType)
+    .eq("round_number", targetRound)
+    .eq("status", "pending");
 
-  if (error) {
-    alert("Error al registrar ganador: " + error.message);
-    return;
+  const openSet = pendingSets ? pendingSets.find(s => !s.player1_id || !s.player2_id) : null;
+
+  if (openSet) {
+    // Si hay un set con espacio, colocar al jugador en player2_id
+    await supabaseClient
+      .from("tournament_sets")
+      .update({ player2_id: playerId })
+      .eq("id", openSet.id);
+  } else {
+    // Si no hay set disponible, crear uno nuevo con el jugador en player1_id
+    await supabaseClient
+      .from("tournament_sets")
+      .insert([{
+        bracket_type: bracketType,
+        round_number: targetRound,
+        player1_id: playerId,
+        player2_id: null,
+        status: "pending"
+      }]);
   }
+}
 
-  loadBrackets();
+// Función para generar la Grand Final cuando ambas ramas terminan
+async function checkGrandFinalsEligibility() {
+  // Verificar si la Grand Final ya fue creada
+  const { data: existingGF } = await supabaseClient
+    .from("tournament_sets")
+    .select("*")
+    .eq("bracket_type", "grand_finals");
+
+  if (existingGF && existingGF.length > 0) return;
+
+  // Obtener sets inconclusos en Winners y Losers
+  const { data: activeSets } = await supabaseClient
+    .from("tournament_sets")
+    .select("*")
+    .neq("bracket_type", "grand_finals")
+    .neq("status", "completed");
+
+  // Si no quedan partidas pendientes en ninguna rama, determinar a los campeones
+  if (!activeSets || activeSets.length === 0) {
+    const { data: winnersFinal } = await supabaseClient
+      .from("tournament_sets")
+      .select("winner_id")
+      .eq("bracket_type", "winners")
+      .order("round_number", { ascending: false })
+      .limit(1)
+      .single();
+
+    const { data: losersFinal } = await supabaseClient
+      .from("tournament_sets")
+      .select("winner_id")
+      .eq("bracket_type", "losers")
+      .order("round_number", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (winnersFinal?.winner_id && losersFinal?.winner_id) {
+      await supabaseClient
+        .from("tournament_sets")
+        .insert([{
+          bracket_type: "grand_finals",
+          round_number: 1,
+          player1_id: winnersFinal.winner_id,
+          player2_id: losersFinal.winner_id,
+          status: "pending"
+        }]);
+    }
+  }
 }
