@@ -359,3 +359,23 @@ async function advanceOrCreateSet(bracketType, targetRound, playerId) {
       }]);
   }
 }
+
+// ELIMINAR PARTICIPANTE
+async function deleteParticipant(participantId, gamertag) {
+  const confirmDelete = confirm(`¿Estás seguro de que deseas eliminar a "${gamertag}" del torneo?`);
+  
+  if (!confirmDelete) return;
+
+  const { error } = await supabaseClient
+    .from("participants")
+    .delete()
+    .eq("id", participantId);
+
+  if (error) {
+    alert("Error al eliminar el participante: " + error.message);
+    return;
+  }
+
+  // Refrescar la lista de participantes y el contador
+  loadParticipants();
+}
