@@ -1,3 +1,5 @@
+const supabaseClient = window.supabase ? window.supabase.createClient("TU_SUPABASE_URL", "TU_SUPABASE_ANON_KEY") : null;
+
 const loginForm = document.getElementById("loginForm");
 const loginSection = document.getElementById("loginSection");
 const dashboard = document.getElementById("dashboard");

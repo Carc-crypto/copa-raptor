@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panel Admin - Copa Raptor</title>
   
-  <!-- Vinculación del CSS separado -->
+  <!-- Carga del CSS corregido -->
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
 
   <div class="admin-container">
 
-    <!-- 1. SECCIÓN DE LOGIN (Se muestra por defecto sin depender de JS) -->
+    <!-- 1. SECCIÓN DE LOGIN (Combina id="loginSection" y class="login-box") -->
     <section id="loginSection" class="login-box" style="display: block;">
       <h1>Panel de Administración</h1>
       <p>Ingresa tus credenciales para gestionar el torneo</p>
@@ -26,7 +26,7 @@
       <p id="loginMessage" class="message"></p>
     </section>
 
-    <!-- 2. DASHBOARD DE ADMINISTRACIÓN (Oculto inicialmente) -->
+    <!-- 2. DASHBOARD DE ADMINISTRACIÓN -->
     <section id="dashboard" style="display: none;">
       
       <header class="dashboard-header">
@@ -50,7 +50,7 @@
       < hr style="margin: 40px 0; border: 0; border-top: 1px solid rgba(245,181,46,.2);">
 
       <h2 style="margin-bottom: 15px; color: var(--gold);">Gestión de Brackets</h2>
-      < div style="display: flex; gap: 10px; margin-bottom: 20px;">
+      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
         <button id="btn-generate-brackets" style="width: auto; padding: 10px 20px;">Generar Brackets</button>
         <button id="btn-reset-brackets" style="width: auto; padding: 10px 20px; background: #e94560; color: #fff;">Resetear Brackets</button>
       </div>
@@ -72,7 +72,7 @@
 
   </div>
 
-  <!-- Scripts cargados en orden correcto -->
+  <!-- Librerías y Scripts al final de body -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="admin.js"></script>
 </body>
