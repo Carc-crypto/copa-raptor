@@ -18,8 +18,8 @@ if (loginForm) {
     const email = document.getElementById("adminEmail").value;
     const password = document.getElementById("adminPassword").value;
 
-    loginMessage.textContent = "Iniciando sesión...";
-
+    loginMessage.textContent = "¡Bienvenido! Verificando permisos...";
+await verifyAdmin(data.user); 
     // Autenticar con correo y contraseña de tu cuenta existente
     const { data, error } = await supabaseClient.auth.signInWithPassword({
       email: email,
