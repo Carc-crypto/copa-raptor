@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Copa Raptor 2026 | Administrador</title>
+  <title>Copa Raptor 2026 | Administrador< /title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Orbitron:wght@500;600;700;800;900&display=swap" rel="stylesheet">
@@ -14,45 +15,45 @@
 
   <main class="admin-container">
 
-    <!-- 1. FORMULARIO DE LOGIN -->
+    
     <section id="loginSection" class="login-box">
       <img src="assets/copa-raptor-2026.jpeg" alt="Copa Raptor">
-      <h1>PANEL DE ADMINISTRADOR</h1>
-      <p>Copa Raptor 2026</p>
+      <h1>PANEL DE ADMINISTRADOR< /h1>
+      <p>Copa Raptor 2026< /p>
 
       <form id="loginForm">
         <input type="email" id="adminEmail" placeholder="Correo del administrador" required>
         <input type="password" id="adminPassword" placeholder="Contraseña" required>
-        <button type="submit" >INICIAR SESIÓN</button>
+        <button type="submit">INICIAR SESIÓN< /button>
       </form>
 
       <p id="loginMessage" class="message"></p>
     </section>
 
-    <!-- 2. DASHBOARD COMPLETO (SÓLO SE MUESTRA AL INICIAR SESIÓN) -->
+
     <section id="dashboard" class="dashboard" style="display:none;">
 
       <div class="dashboard-header">
         <div>
           <p class="eyebrow">COPA RAPTOR 2026</p>
           <h1>PARTICIPANTES</h1>
-          </div>
+        </div>
 
         <button id="logoutButton" class="logout">CERRAR SESIÓN</button>
       </div>
 
       <div class="counter">
-        <span >PARTICIPANTES REGISTRADOS</span>
-        <strong id="participantCount" >0</strong>
+        <span>PARTICIPANTES REGISTRADOS</span>
+        <strong id="participantCount">0</strong>
       </div>
 
       <div id="participantsContainer" class="participants-container"></div>
 
       <p id="dashboardMessage" class="message"></p>
 
-      <!-- GESTIÓN DE BRACKETS DENTRO DEL DASHBOARD -->
+    
       <div class="tournament-section" style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #1f2833;">
-        <h2 style="font-family: 'Orbitron', sans-serif; color: #66fcf1; margin-bottom: 15px;" >GESTIÓN DE BRACKETS</h2>
+        <h2 style="font-family: 'Orbitron', sans-serif; color: #66fcf1; margin-bottom: 15px;">GESTIÓN DE BRACKETS</h2>
 
         <div style="margin-bottom: 25px; display: flex; gap: 15px; flex-wrap: wrap;">
           <button id="btn-generate-brackets" style="background: #f1c40f; color: #000; font-family: 'Orbitron', sans-serif; font-weight: 800; padding: 14px 28px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; letter-spacing: 1px;">
@@ -64,7 +65,7 @@
           </button>
         </div>
 
-        <div style="display: flex; gap: 20px; flex-wrap: wrap;" >
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
           <div style="flex: 1; min-width: 320px; background: #0b0c10; padding: 15px; border-radius: 8px; border: 1px solid #4eacc5;">
             <h3 style="color: #4eacc5; border-bottom: 2px solid #4eacc5; padding-bottom: 8px; margin-top: 0; font-family: 'Orbitron', sans-serif;">
               🏆 Winner's Bracket
@@ -75,15 +76,15 @@
           <div style="flex: 1; min-width: 320px; background: #0b0c10; padding: 15px; border-radius: 8px; border: 1px solid #e94560;">
             <h3 style="color: #e94560; border-bottom: 2px solid #e94560; padding-bottom: 8px; margin-top: 0; font-family: 'Orbitron', sans-serif;">
               🔥 Loser's Bracket
-            </h3 >
+            </h3>
             <div id="losers-container"></div>
-          </div >
-        </div >
+          </div>
+        </div>
 
         <div style="margin-top: 20px; background: #0b0c10; padding: 15px; border-radius: 8px; border: 1px solid #f1c40f;">
           <h3 style="color: #f1c40f; border-bottom: 2px solid #f1c40f; padding-bottom: 8px; margin-top: 0; font-family: 'Orbitron', sans-serif;">
             👑 Grand Finals
-          </h3 >
+          </h3>
           <div id="grand-finals-container"></div>
         </div>
       </div>
@@ -92,38 +93,38 @@
 
   </main>
 
+
+  <div id="stageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: #0b0c10; border: 2px solid #66fcf1; padding: 25px; border-radius: 10px; max-width: 550px; width: 90%; max-height: 90vh; overflow-y: auto; color: #fff; font-family: 'Orbitron', sans-serif; position: relative;">
+      
+      <button onclick="closeStageModal()" style="position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #e94560; font-size: 22px; font-weight: bold; cursor: pointer;">
+        ✖
+      </button>
+
+      <h2 style="color: #66fcf1; margin-top: 0; font-size: 18px; border-bottom: 1px solid #1f2833; padding-bottom: 10px; padding-right: 30px;">
+        🗺️ SELECCIÓN DE ESCENARIOS
+      </h2>
+
+      <p id="stageInstruction" style="font-size: 13px; color: #f1c40f; font-family: sans-serif; line-height: 1.4; margin-top: 15px;"></p>
+
+      <div id="stagesContainer" style="display: flex; flex-direction: column; gap: 8px; margin: 20px 0;"></div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #1f2833;">
+        <button id="btnConfirmStageAction" style="background: #2ecc71; color: #000; border: none; padding: 12px 24px; border-radius: 5px; font-weight: 800; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 13px;">
+          SIGUIENTE PASO ➔
+        </button>
+
+        <button onclick="closeStageModal()" style="background: #e94560; color: #fff; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 700;">
+          CANCELAR / SALIR
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="admin.js"></script>
-  !-- MODAL DE SELECCIÓN Y BANEO DE ESCENARIOS -- 
-<div id="stageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;" >
-  <div style="background: #0b0c10; border: 2px solid #66fcf1; padding: 25px; border-radius: 10px; max-width: 550px; width: 90%; max-height: 90vh; overflow-y: auto; color: #fff; font-family: 'Orbitron', sans-serif; position: relative;" >
-    
-    !-- BOTÓN X PARA CERRAR ARRIBA -- 
-    <button onclick="closeStageModal()" style="position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #e94560; font-size: 22px; font-weight: bold; cursor: pointer;">
-      ✖
-    </button >
-
-    <h2 style="color: #66fcf1; margin-top: 0; font-size: 18px; border-bottom: 1px solid #1f2833; padding-bottom: 10px; padding-right: 30px;" >
-      🗺️ SELECCIÓN DE ESCENARIOS
-    </h2 >
-
-    <p id="stageInstruction" style="font-size: 13px; color: #f1c40f; font-family: sans-serif; line-height: 1.4; margin-top: 15px;" ></p>
-
-    <div id="stagesContainer" style="display: flex; flex-direction: column; gap: 8px; margin: 20px 0;"></div >
- 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #1f2833;">
-      <button id="btnConfirmStageAction" style="background: #2ecc71; color: #000; border: none; padding: 12px 24px; border-radius: 5px; font-weight: 800; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 13px;">
-        SIGUIENTE PASO ➔
-      </button >
-
-      <button onclick="closeStageModal()" style="background: #e94560; color: #fff; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 700;">
-        CANCELAR / SALIR
-      </button>
-    </div>
-
-  </div>
-</div>
 
 </body>
 </html>
