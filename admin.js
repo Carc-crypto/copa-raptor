@@ -17,31 +17,29 @@ const logoutButton = document.getElementById("logoutButton");
 // 1. INICIO DE SESIÓN
 
 if (loginForm) {
-  loginForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
+  loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  
+  const email = document.getElementById("email").value; // O los IDs que tengas
+  const password = document.getElementById("password").value;
 
-    const email = document.getElementById("adminEmail").value;
-    const password = document.getElementById("adminPassword").value;
-
-    loginMessage.textContent = "¡Bienvenido! Verificando permisos...";
-await verifyAdmin(data.user); 
-    // Autenticar con correo y contraseña de tu cuenta existente
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-      email: email,
-      password: password
-    });
-
-    if (error) {
-      console.error("Error al iniciar sesión:", error.message);
-      loginMessage.textContent = "Error: " + error.message;
-      return;
-    }
-
-    // Si las credenciales son correctas, entra al panel
-    loginMessage.textContent = "¡Bienvenido!";
-    document.getElementById("loginSection").style.display = "none";
-    document.getElementById("dashboard").style.display = "block";
+  // 1. PRIMERO llamas a Supabase para obtener data y error
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: password
   });
+
+  // 2. LUEGO usas error y data
+  if (error) {
+    loginMessage.textContent = "Error al iniciar sesión: " + error.message;
+    return;
+  }
+
+  if (data && data.user) {
+    loginMessage.textContent = "¡Bienvenido! Verificando permisos...";
+    await verifyAdmin(data.user);
+  }
+});
 }
 
 async function verifyAdmin(user) {
