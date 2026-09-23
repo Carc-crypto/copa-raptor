@@ -21,28 +21,28 @@ if (loginForm) {
   e.preventDefault();
 
   const emailInput = document.getElementById("adminEmail");
-  const passwordInput = document.getElementById("adminPassword");
+    const passwordInput = document.getElementById("adminPassword");
 
-  const email = emailInput ? emailInput.value : "";
-  const password = passwordInput ? passwordInput.value : "";
+    const email = emailInput ? emailInput.value : "";
+    const password = passwordInput ? passwordInput.value : "";
 
-  // 1. Declarar PRIMERO la variable data al recibir la respuesta
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password,
+    // 1. Llamada a Supabase
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    // 2. Manejo de respuesta
+    if (error) {
+      if (loginMessage) loginMessage.textContent = "Error: " + error.message;
+      return;
+    }
+
+    if (data?.user) {
+      if (loginMessage) loginMessage.textContent = "¡Bienvenido! Verificando permisos...";
+      await verifyAdmin(data.user);
+    }
   });
-
-  // 2. Usar data y error DESPUÉS de haber sido inicializados
-  if (error) {
-    loginMessage.textContent = "Error: " + error.message;
-    return;
-  }
-
-  if (data?.user) {
-    loginMessage.textContent = "¡Bienvenido! Verificando permisos...";
-    await verifyAdmin(data.user);
-  }
-});
 }
 async function verifyAdmin(user) {
   const { data, error } = await supabaseClient
