@@ -203,9 +203,7 @@ async function checkSession() {
 // Aseguramos que el DOM esté listo antes de ejecutar
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", checkSession);
-} else {
-  checkSession();
-}
+} 
 
 async function loadBrackets() {
   try {
