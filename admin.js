@@ -20,8 +20,11 @@ if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const email = document.getElementById("loginEmail").value;
-  const password = document.getElementById("loginPassword").value;
+  const emailInput = document.getElementById("adminEmail");
+  const passwordInput = document.getElementById("adminPassword");
+
+  const email = emailInput ? emailInput.value : "";
+  const password = passwordInput ? passwordInput.value : "";
 
   // 1. Declarar PRIMERO la variable data al recibir la respuesta
   const { data, error } = await supabaseClient.auth.signInWithPassword({
