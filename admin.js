@@ -160,24 +160,43 @@ if (logoutButton) {
 
 // COMPROBAR SESIÓN
 async function checkSession() {
-  const { data } = await supabaseClient.auth.getSession();
+  const loginSection = document.getElementById("loginSection");
+  const dashboard = document.getElementById("dashboard");
 
-  
-  if (!data || !data.session) {
+  try {
+    // Si la librería de Supabase no se ha cargado bien, mostramos el login por defecto
+    if (typeof supabaseClient === "undefined" || !supabaseClient) {
+      console.warn("Supabase no está listo, mostrando pantalla de login.");
+      if (loginSection) loginSection.style.display = "block";
+      return;
+    }
+
+    const { data, error } = await supabaseClient.auth.getSession();
+
+    if (error || !data || !data.session) {
+      // Si no hay sesión, mostramos el Login
+      if (loginSection) loginSection.style.display = "block";
+      if (dashboard) dashboard.style.display = "none";
+      return;
+    }
+
+    // Si sí hay sesión, verificamos el usuario Admin
+    await verifyAdmin(data.session.user);
+
+  } catch (err) {
+    console.error("Error detectado en checkSession:", err);
+    // En caso de cualquier error imprevisto, no dejamos la pantalla en blanco
     if (loginSection) loginSection.style.display = "block";
     if (dashboard) dashboard.style.display = "none";
-    return;
   }
-
-  
-  await verifyAdmin(data.session.user);
 }
 
-
-document.addEventListener("DOMContentLoaded", () => {
+// Aseguramos que el DOM esté listo antes de ejecutar
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", checkSession);
+} else {
   checkSession();
-});
-
+}
 
 async function loadBrackets() {
   try {
