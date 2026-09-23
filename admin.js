@@ -266,8 +266,9 @@ if (btnReset) {
 btnReset.addEventListener("click", resetTournamentBrackets);
 }
 });
+// MARCAR GANADOR Y MOVER DE MANERA ESTRICTA
 async function setMatchWinner(setId, winnerId) {
-  // 1. Obtener la partida actual
+  // 1. Obtener la partida actual desde Supabase
   const { data: currentSet, error: fetchError } = await supabaseClient
     .from("tournament_sets")
     .select("*")
@@ -275,62 +276,74 @@ async function setMatchWinner(setId, winnerId) {
     .single();
 
   if (fetchError || !currentSet) {
-    alert("Error al obtener la partida.");
+    alert("Error al consultar la partida.");
     return;
   }
 
-  // Identificar quién PERDIÓ
-  const loserId = currentSet.player1_id === winnerId ? currentSet.player2_id : currentSet.player1_id;
+  // Convertir a String para evitar errores de comparación entre enteros y cadenas
+  const wId = String(winnerId);
+  const p1Id = String(currentSet.player1_id);
+  const p2Id = String(currentSet.player2_id);
 
-  // 2. Marcar partida como completada
+  // Determinar estrictamente la ID del PERDEDOR
+  let loserId = null;
+  if (wId === p1Id) {
+    loserId = currentSet.player2_id;
+  } else if (wId === p2Id) {
+    loserId = currentSet.player1_id;
+  }
+
+  // 2. Actualizar el estado de la partida a completada
   const { error: updateError } = await supabaseClient
     .from("tournament_sets")
     .update({ winner_id: winnerId, status: "completed" })
     .eq("id", setId);
 
   if (updateError) {
-    alert("Error al guardar el ganador: " + updateError.message);
+    alert("Error al guardar ganador: " + updateError.message);
     return;
   }
 
-  // 3. Progresión según la rama actual
+  // 3. Mover a los jugadores según la rama actual
   if (currentSet.bracket_type === "winners") {
-    // EL PERDEDOR va a Loser's Bracket (Misma ronda o Ronda 1)
+    // ENVIAR ÚNICAMENTE AL PERDEDOR A LOSERS
     if (loserId) {
       await advanceOrCreateSet("losers", 1, loserId);
     }
 
-    // EL GANADOR avanza a la Siguiente Ronda de Winners
+    // ENVIAR ÚNICAMENTE AL GANADOR A LA SIGUIENTE RONDA DE WINNERS
     if (winnerId) {
       await advanceOrCreateSet("winners", currentSet.round_number + 1, winnerId);
     }
 
   } else if (currentSet.bracket_type === "losers") {
-    // En Losers, el perdedor queda ELIMINADO. Solo avanza el ganador a la siguiente ronda de Losers.
+    // En Losers el perdedor queda eliminado. Solo el ganador avanza en Losers.
     if (winnerId) {
       await advanceOrCreateSet("losers", currentSet.round_number + 1, winnerId);
     }
   }
 
-  // 4. Refrescar la vista
+  // 4. Recargar los brackets en la pantalla
   loadBrackets();
 }
 
-// Función auxiliar corregida para evitar duplicados
+// INSERCIÓN O ACOPLAMIENTO SIN DUPLICAR
 async function advanceOrCreateSet(bracketType, targetRound, playerId) {
-  // 1. Verificar si el jugador YA está registrado en esa ronda de ese bracket para no duplicarlo
-  const { data: existingPlayerSets } = await supabaseClient
+  if (!playerId) return;
+
+  // 1. Verificar si el jugador YA está en algún set (completado o pendiente) en esa ronda del bracket
+  const { data: existingSets } = await supabaseClient
     .from("tournament_sets")
     .select("*")
     .eq("bracket_type", bracketType)
     .eq("round_number", targetRound)
-    .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`);
+    .or(`player1_id.eq.\({playerId},player2_id.eq.\){playerId}`);
 
-  if (existingPlayerSets && existingPlayerSets.length > 0) {
-    return; // El jugador ya está asignado en esta ronda, no hacemos nada.
+  if (existingSets && existingSets.length > 0) {
+    return; // Si ya existe en esa ronda, no hace nada
   }
 
-  // 2. Buscar si hay un set pendiente que necesite un segundo jugador (player2)
+  // 2. Buscar si hay una partida pendiente que no tenga Jugador 2
   const { data: pendingSets } = await supabaseClient
     .from("tournament_sets")
     .select("*")
@@ -338,16 +351,16 @@ async function advanceOrCreateSet(bracketType, targetRound, playerId) {
     .eq("round_number", targetRound)
     .eq("status", "pending");
 
-  const openSet = pendingSets ? pendingSets.find(s => s.player1_id && !s.player2_id && s.player1_id !== playerId) : null;
+  const openSet = pendingSets ? pendingSets.find(s => s.player1_id && !s.player2_id && String(s.player1_id) !== String(playerId)) : null;
 
   if (openSet) {
-    // Asignar como Jugador 2
+    // Asignar en el espacio libre (player2)
     await supabaseClient
       .from("tournament_sets")
       .update({ player2_id: playerId })
       .eq("id", openSet.id);
   } else {
-    // Crear un nuevo set con el jugador como Jugador 1
+    // Crear una nueva partida con el jugador en player1
     await supabaseClient
       .from("tournament_sets")
       .insert([{
