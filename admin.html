@@ -95,6 +95,29 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="admin.js"></script>
+  -- MODAL DE SELECCIÓN Y BANEO DE ESCENARIOS -- 
+<div id="stageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;">
+  <div style="background: #0b0c10; border: 2px solid #66fcf1; padding: 25px; border-radius: 10px; max-width: 550px; width: 90%; color: #fff; font-family: 'Orbitron', sans-serif;">
+    
+    <h2 style="color: #66fcf1; margin-top: 0; font-size: 20px; border-bottom: 1px solid #1f2833; padding-bottom: 10px;">
+      🗺️ SELECCIÓN DE ESCENARIOS
+    </h2 >
+
+    <p id="stageInstruction" style="font-size: 14px; color: #f1c40f; font-family: sans-serif; line-height: 1.4;" ></p>
+
+    <div id="stagesContainer" style="display: flex; flex-direction: column; gap: 8px; margin: 20px 0;" >< /div >
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;" >
+      <button id="btnConfirmStageAction" style="background: #2ecc71; color: #000; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; font-family: 'Orbitron', sans-serif;">
+        CONFIRMAR
+      </button>
+      <button onclick="closeStageModal()" style="background: #e94560; color: #fff; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;">
+        CANCELAR
+      </button>
+    </div >
+
+  </div>
+</div>
 
 </body>
 </html>

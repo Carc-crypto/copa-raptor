@@ -181,6 +181,12 @@ if (!sets || sets.length === 0) {
         </button>
       ` : ''}
 
+      ${hasBothPlayers ? `
+        <button onclick="openStageStriking(${set.id}, '${p1}', '${p2}')" style="background:#8e44ad; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-top:5px;">
+          🗺️ Seleccionar Escenario
+        </button>
+      ` : ''}
+
       ${(isPending || isInProgress) && hasBothPlayers ? `
         <div style="margin-top: 8px; font-size: 13px; color: #aaa;">Declarar Ganador:</div>
         <div style="display:flex; gap:8px; margin-top:4px;">
@@ -391,4 +397,180 @@ async function deleteParticipant(participantId, gamertag) {
 
   // Refrescar la lista de participantes y el contador
   loadParticipants();
+}
+const STARTER_STAGES = [
+  "Campo de Batalla (Battlefield)",
+  "Destino Final (Final Destination)",
+  "Lylat Cruise",
+  "Pueblo Smash (Smashville)",
+  "Pueblo y Ciudad (Town & City)"
+];
+
+const COUNTERPICK_STAGES = [
+  ...STARTER_STAGES,
+  "Estadio Pokémon 2 (Pokemon Stadium 2)",
+  "Sistema Solar (Kalos Pokemon League)",
+  "Bastión Hueco (Hollow Bastion)"
+];
+
+let currentStageState = {
+  setId: null,
+  gameNumber: 1,
+  player1Name: "",
+  player2Name: "",
+  lastWinnerId: null,
+  bannedStages: [],
+  selectedStage: null
+};
+
+// Abrir Modal de Escenarios
+function openStageStriking(setId, p1Name, p2Name, gameNumber = 1, lastWinnerId = null, lastWinnerName = "") {
+  currentStageState = {
+    setId,
+    gameNumber,
+    player1Name: p1Name,
+    player2Name: p2Name,
+    lastWinnerId,
+    bannedStages: [],
+    selectedStage: null
+  };
+
+  const modal = document.getElementById("stageModal");
+  modal.style.display = "flex";
+
+  if (gameNumber === 1) {
+    // Partida 1: Baneo inicial (P1 banea 3, P2 elige)
+    renderStageBanPhase1();
+  } else {
+    // Partida 2+: Counterpick (Ganador banea 1, Perdedor elige)
+    renderStageCounterpickPhase(lastWinnerName);
+  }
+}
+
+// Fase 1: P1 banea 3 escenarios
+function renderStageBanPhase1() {
+  const instruction = document.getElementById("stageInstruction");
+  instruction.innerHTML = `**Fase 1 (Partida 1):** ${currentStageState.player1Name} debe seleccionar **3 escenarios para BANEAR**.`;
+
+  const container = document.getElementById("stagesContainer");
+  container.innerHTML = "";
+
+  STARTER_STAGES.forEach(stage => {
+    const btn = document.createElement("button");
+    btn.style = "background: #12131C; color: #fff; border: 1px solid #4eacc5; padding: 10px; border-radius: 5px; text-align: left; cursor: pointer; font-size: 13px;";
+    btn.textContent = stage;
+
+    btn.onclick = () => {
+      if (currentStageState.bannedStages.includes(stage)) {
+        currentStageState.bannedStages = currentStageState.bannedStages.filter(s => s !== stage);
+        btn.style.background = "#12131C";
+        btn.style.color = "#fff";
+      } else {
+        if (currentStageState.bannedStages.length < 3) {
+          currentStageState.bannedStages.push(stage);
+          btn.style.background = "#e94560";
+          btn.style.color = "#fff";
+        } else {
+          alert("Ya seleccionaste 3 escenarios para banear.");
+        }
+      }
+    };
+    container.appendChild(btn);
+  });
+
+  const confirmBtn = document.getElementById("btnConfirmStageAction");
+  confirmBtn.onclick = () => {
+    if (currentStageState.bannedStages.length !== 3) {
+      alert("Debes banear exactamente 3 escenarios.");
+      return;
+    }
+    renderStagePickPhase1();
+  };
+}
+
+// Fase 2: P2 elige de los restantes
+function renderStagePickPhase1() {
+  const instruction = document.getElementById("stageInstruction");
+  instruction.innerHTML = `**Fase 2 (Partida 1):** ${currentStageState.player2Name} debe **ELEGIR EL ESCENARIO** para jugar.`;
+
+  const container = document.getElementById("stagesContainer");
+  container.innerHTML = "";
+
+  const availableStages = STARTER_STAGES.filter(s => !currentStageState.bannedStages.includes(s));
+
+  availableStages.forEach(stage => {
+    const btn = document.createElement("button");
+    btn.style = "background: #12131C; color: #fff; border: 1px solid #2ecc71; padding: 10px; border-radius: 5px; text-align: left; cursor: pointer; font-size: 13px;";
+    btn.textContent = stage;
+
+    btn.onclick = () => {
+      currentStageState.selectedStage = stage;
+      Array.from(container.children).forEach(c => c.style.background = "#12131C");
+      btn.style.background = "#2ecc71";
+      btn.style.color = "#000";
+    };
+    container.appendChild(btn);
+  });
+
+  const confirmBtn = document.getElementById("btnConfirmStageAction");
+  confirmBtn.onclick = () => {
+    if (!currentStageState.selectedStage) {
+      alert("Debes seleccionar un escenario.");
+      return;
+    }
+    alert(`¡Escenario confirmado para la Partida 1!: ${currentStageState.selectedStage}`);
+    closeStageModal();
+  };
+}
+
+// Counterpick (Partidas 2 en adelante)
+function renderStageCounterpickPhase(lastWinnerName) {
+  const loserName = currentStageState.player1Name === lastWinnerName ? currentStageState.player2Name : currentStageState.player1Name;
+  const instruction = document.getElementById("stageInstruction");
+  instruction.innerHTML = `**Counterpick (Partida ${currentStageState.gameNumber}):**
+
+${lastWinnerName} (Ganador) banea 1 escenario.
+
+
+${loserName} (Perdedor) elige el escenario.`;
+
+const container = document.getElementById("stagesContainer");
+container.innerHTML = "";
+
+COUNTERPICK_STAGES.forEach(stage => {
+const btn = document.createElement("button");
+btn.style = "background: #12131C; color: #fff; border: 1px solid #f1c40f; padding: 10px; border-radius: 5px; text-align: left; cursor: pointer; font-size: 13px;";
+btn.textContent = stage;
+
+btn.onclick = () => {
+  if (currentStageState.bannedStages.includes(stage)) {
+    currentStageState.bannedStages = [];
+    currentStageState.selectedStage = stage;
+    Array.from(container.children).forEach(c => c.style.background = "#12131C");
+    btn.style.background = "#2ecc71";
+    btn.style.color = "#000";
+  } else {
+    currentStageState.bannedStages = [stage];
+    currentStageState.selectedStage = null;
+    Array.from(container.children).forEach(c => c.style.background = "#12131C");
+    btn.style.background = "#e94560";
+    btn.style.color = "#fff";
+  }
+};
+container.appendChild(btn);
+});
+
+const confirmBtn = document.getElementById("btnConfirmStageAction");
+confirmBtn.onclick = () => {
+if (!currentStageState.selectedStage) {
+alert("Selecciona el escenario final para jugar.");
+return;
+}
+alert(`¡Escenario confirmado para la Partida ${currentStageState.gameNumber}!: ${currentStageState.selectedStage}`);
+closeStageModal();
+};
+}
+
+function closeStageModal() {
+document.getElementById("stageModal").style.display = "none";
 }
