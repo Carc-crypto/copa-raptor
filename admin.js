@@ -1,4 +1,8 @@
-const supabaseClient = window.supabase ? window.supabase.createClient("TU_SUPABASE_URL", "TU_SUPABASE_ANON_KEY") : null;
+console.log("URL Leyendo actualmente:", SUPABASE_URL);
+
+const supabaseClient = window.supabase 
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
+  : null;
 
 const loginForm = document.getElementById("loginForm");
 const loginSection = document.getElementById("loginSection");
