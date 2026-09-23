@@ -19,29 +19,28 @@ const logoutButton = document.getElementById("logoutButton");
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  
-  const email = document.getElementById("email").value; // O los IDs que tengas
-  const password = document.getElementById("password").value;
 
-  // 1. PRIMERO llamas a Supabase para obtener data y error
+  const email = document.getElementById("loginEmail").value;
+  const password = document.getElementById("loginPassword").value;
+
+  // 1. Declarar PRIMERO la variable data al recibir la respuesta
   const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email: email,
-    password: password
+    email,
+    password,
   });
 
-  // 2. LUEGO usas error y data
+  // 2. Usar data y error DESPUÉS de haber sido inicializados
   if (error) {
-    loginMessage.textContent = "Error al iniciar sesión: " + error.message;
+    loginMessage.textContent = "Error: " + error.message;
     return;
   }
 
-  if (data && data.user) {
+  if (data?.user) {
     loginMessage.textContent = "¡Bienvenido! Verificando permisos...";
     await verifyAdmin(data.user);
   }
 });
 }
-
 async function verifyAdmin(user) {
   const { data, error } = await supabaseClient
     .from("admin_users")
