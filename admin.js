@@ -153,7 +153,7 @@ console.error("Error al cargar brackets:", err.message);
 }
 
 function renderSetsList(sets, container) {
-if (!sets || sets.length === 0) {
+  if (!sets || sets.length === 0) {
     container.innerHTML = "Sin enfrentamientos en esta sección.";
     return;
   }
@@ -164,49 +164,29 @@ if (!sets || sets.length === 0) {
     const p1 = set.player1 ? set.player1.gamertag : "TBD";
     const p2 = set.player2 ? set.player2.gamertag : "TBD";
     const card = document.createElement("div");
-    card.style = "background:#12131C; margin: 10px 0; padding: 12px; border-radius: 6px; border-left: 4px solid #f1c40f; color: #fff;";
+    card.style = "background:#12131C; margin: 10px 0; padding: 14px; border-radius: 6px; border-left: 4px solid #f1c40f; color: #fff;";
 
     const isPending = set.status === 'pending';
     const isInProgress = set.status === 'in_progress';
     const isCompleted = set.status === 'completed';
     const hasBothPlayers = set.player1_id && set.player2_id;
 
+    // Determinar si la ronda es un Bo5 (Finales) o Bo3 (Sets normales)
+    const isBo5 = set.bracket_type === 'grand_finals' || set.is_final_round; 
+    const maxWinsToWinSet = isBo5 ? 3 : 2; 
+
+    // Marcador actual (guardado en la BD o por defecto 0)
+    const p1Score = set.p1_score || 0;
+    const p2Score = set.p2_score || 0;
+
     card.innerHTML = `
-      <div><strong>Ronda ${set.round_number}</strong> — Estado: <em>${set.status}</em></div>
-      <div style="font-size: 16px; font-weight: bold; margin: 8px 0;">${p1} vs ${p2}</div>
+Ronda ${set.round_number} (${isBo5 ? 'Best of 5' : 'Best of 3'})
+Estado: *${set.status}*${p1}${p1Score} -${p2Score}${p2}${hasBothPlayers && !isCompleted ? `MARCAR GANADOR DE PARTIDA INDIVIDUAL:➕ Partida para ${p1}➕ Partida para ${p2}${isPending ? `▶️ En Curso
+` : ''}🗺️ Escenarios` : ''}${isCompleted && set.winner ? `🏆 Ganador del Set: ${set.winner.gamertag}  ` : ''}
+`;
 
-      ${isPending && hasBothPlayers ? `
-        <button onclick="setMatchInProgres(${set.id})" style="background:#3498db; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-top:5px;">
-          ▶️ Marcar "En Curso"
-        </button>
-      ` : ''}
-
-      ${hasBothPlayers ? `
-        <button onclick="openStageStriking(${set.id}, '${p1}', '${p2}')" style="background:#8e44ad; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-top:5px;">
-          🗺️ Seleccionar Escenario
-        </button>
-      ` : ''}
-
-      ${(isPending || isInProgress) && hasBothPlayers ? `
-        <div style="margin-top: 8px; font-size: 13px; color: #aaa;">Declarar Ganador:</div>
-        <div style="display:flex; gap:8px; margin-top:4px;">
-          <button onclick="setMatchWinner(${set.id}, '${set.player1_id}')" style="background:#2ecc71; color:#000; font-weight:bold; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">
-            🏆 ${p1}
-          </button>
-          <button onclick="setMatchWinner(${set.id}, '${set.player2_id}')" style="background:#2ecc71; color:#000; font-weight:bold; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">
-            🏆 ${p2}
-          </button>
-        </div>
-      ` : ''}
-
-      ${isCompleted && set.winner ? `
-        <div style="color:#2ecc71; font-weight:bold; margin-top:6px;">🏆 Ganador: ${set.winner.gamertag}</div>
-      ` : ''}
-    `;
-
-    container.appendChild(card);
-  });
-}
+container.appendChild(card);
+});}
 
 async function generateInitialBrackets() {
 if (!confirm("¿Deseas generar los Brackets con los participantes registrados?")) return;
@@ -573,4 +553,29 @@ closeStageModal();
 
 function closeStageModal() {
 document.getElementById("stageModal").style.display = "none";
+}
+
+// AUMENTAR MARCADOR Y VERIFICAR GANADOR DEL SET
+async function addGameWin(setId, playerId, newP1Score, newP2Score, targetWins) {
+  // 1. Actualizar el marcador en Supabase
+  const { error } = await supabaseClient
+    .from("tournament_sets")
+    .update({ 
+      p1_score: newP1Score, 
+      p2_score: newP2Score,
+      status: "in_progress" 
+    })
+    .eq("id", setId);
+
+  if (error) {
+    alert("Error al actualizar la partida: " + error.message);
+    return;
+  }
+
+  // 2. Si un jugador alcanza las victorias requeridas (2 en Bo3, 3 en Bo5), se le declara ganador del set
+  if (newP1Score >= targetWins || newP2Score >= targetWins) {
+    await setMatchWinner(setId, playerId);
+  } else {
+    loadBrackets(); // Refrescar la pantalla para ver el marcador actualizado
+  }
 }
