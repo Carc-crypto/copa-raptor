@@ -1,4 +1,4 @@
-console.log("URL Leyendo actualmente:", SUPABASE_URL);
+console.log("URL Leyendo actualmente:", "https://gigcjdhnnjnrojentaev.supabase.com");
 
 const supabaseClient = window.supabase 
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
