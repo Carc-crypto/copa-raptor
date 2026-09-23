@@ -162,14 +162,23 @@ if (logoutButton) {
 async function checkSession() {
   const { data } = await supabaseClient.auth.getSession();
 
-  if (!data || !data.session) return;
+  
+  if (!data || !data.session) {
+    if (loginSection) loginSection.style.display = "block";
+    if (dashboard) dashboard.style.display = "none";
+    return;
+  }
 
+  
   await verifyAdmin(data.session.user);
 }
 
-checkSession();
 
-// 3. GESTIÓN DE BRACKETS
+document.addEventListener("DOMContentLoaded", () => {
+  checkSession();
+});
+
+
 async function loadBrackets() {
   try {
     const { data: sets, error } = await supabaseClient
