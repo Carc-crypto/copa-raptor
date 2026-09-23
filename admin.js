@@ -450,7 +450,7 @@ function openStageStriking(setId, p1Name, p2Name, gameNumber = 1, lastWinnerId =
 // Fase 1: P1 banea 3 escenarios
 function renderStageBanPhase1() {
   const instruction = document.getElementById("stageInstruction");
-  instruction.innerHTML = `**Fase 1 (Partida 1):** ${currentStageState.player1Name} debe seleccionar **3 escenarios para BANEAR**.`;
+  instruction.innerHTML = `Fase 1 (Partida 1): ${currentStageState.player1Name} debe seleccionar 3 escenarios para BANEAR.`;
 
   const container = document.getElementById("stagesContainer");
   container.innerHTML = "";
@@ -491,7 +491,7 @@ function renderStageBanPhase1() {
 // Fase 2: P2 elige de los restantes
 function renderStagePickPhase1() {
   const instruction = document.getElementById("stageInstruction");
-  instruction.innerHTML = `**Fase 2 (Partida 1):** ${currentStageState.player2Name} debe **ELEGIR EL ESCENARIO** para jugar.`;
+  instruction.innerHTML = `Fase 2 (Partida 1): ${currentStageState.player2Name} debe ELEGIR EL ESCENARIO para jugar.`;
 
   const container = document.getElementById("stagesContainer");
   container.innerHTML = "";
