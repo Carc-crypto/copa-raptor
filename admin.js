@@ -10,6 +10,7 @@ const dashboardMessage = document.getElementById("dashboardMessage");
 const logoutButton = document.getElementById("logoutButton");
 
 // 1. INICIO DE SESIÓN
+
 if (loginForm) {
   loginForm.addEventListener("submit", async function (event) {
     event.preventDefault();
@@ -19,18 +20,22 @@ if (loginForm) {
 
     loginMessage.textContent = "Iniciando sesión...";
 
+    // Autenticar con correo y contraseña de tu cuenta existente
     const { data, error } = await supabaseClient.auth.signInWithPassword({
       email: email,
       password: password
     });
 
     if (error) {
-      console.error("Error de Auth:", error.message);
+      console.error("Error al iniciar sesión:", error.message);
       loginMessage.textContent = "Error: " + error.message;
       return;
     }
 
-    await verifyAdmin(data.user);
+    // Si las credenciales son correctas, entra al panel
+    loginMessage.textContent = "¡Bienvenido!";
+    document.getElementById("loginSection").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
   });
 }
 
