@@ -1,5 +1,5 @@
-const SUPABASE_URL = "https://TU_PROYECTO.supabase.co";
-const SUPABASE_ANON_KEY = "TU_KEY_ANON_AQUI";
+const SUPABASE_URL = "https://gigcjdhnnjnrojentaev.supabase.com";
+const SUPABASE_ANON_KEY = "sb_publishable_gBHOBIn8vmrgFWZdT0cgVg_prdJJmNC";
 
 const supabaseClient = window.supabase 
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
@@ -26,7 +26,7 @@ if (loginForm) {
     const email = emailInput ? emailInput.value : "";
     const password = passwordInput ? passwordInput.value : "";
 
-    // 1. Llamada a Supabase
+    // 1. Llamada a Supabase//
     const { data, error } = await supabaseClient.auth.signInWithPassword({
       email,
       password,
