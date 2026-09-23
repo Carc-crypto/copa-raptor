@@ -4,76 +4,54 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panel Admin - Copa Raptor</title>
-  
-  <!-- Vinculación del CSS corregido -->
-  <link rel="stylesheet" href="admin.css">
+  <style>
+    :root {
+      --bg: #020812;
+      --panel: #071525;
+      --gold: #f5b52e;
+      --text: #f5f7fb;
+      --muted: #9eacbd;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #020812;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .login-box {
+      width: 100%;
+      max-width: 400px;
+      padding: 30px;
+      background: var(--panel);
+      border: 1px solid var(--gold);
+      border-radius: 8px;
+      text-align: center;
+    }
+    .login-box h1 { color: var(--gold); margin-bottom: 20px; font-size: 22px; }
+    .login-box input {
+      width: 100%; padding: 12px; margin-bottom: 12px;
+      background: #020a14; border: 1px solid #333; color: #fff; border-radius: 4px;
+    }
+    .login-box button {
+      width: 100%; padding: 12px; background: var(--gold); border: none;
+      font-weight: bold; cursor: pointer; border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
 
-  <div class="admin-container">
-
-    <!-- 1. SECCIÓN DE LOGIN DE ADMINISTRADOR -->
-    <section id="loginSection" class="login-box">
-      <h1>Panel de Administración</h1>
-      <p>Ingresa tus credenciales para gestionar el torneo</p>
-
-      <form id="loginForm">
-        <input type="email" id="adminEmail" placeholder="Correo electrónico" required>
-        <input type="password" id="adminPassword" placeholder="Contraseña" required>
-        <button type="submit">INGRESAR</button>
-      </form>
-
-      <p id="loginMessage" class="message"></p>
-    </section>
-
-    <!-- 2. DASHBOARD DE ADMINISTRACIÓN (Inicia oculto) -->
-    <section id="dashboard" style="display: none;">
-      
-      <header class="dashboard-header">
-        <div>
-          <p class="eyebrow">COPA RAPTOR 2026</p>
-          <h1>Panel de Control</h1>
-        </div>
-        <button id="logoutButton" class="logout">Cerrar Sesión</button>
-      </header>
-
-      <p id="dashboardMessage" class="message"></p>
-
-      <div class="counter">
-        <span>Participantes Registrados</span>
-        <strong id="participantCount">0</strong>
-      </div>
-
-      <h2 style="margin-bottom: 15px; color: var(--gold);">Lista de Participantes</h2>
-      <div id="participantsContainer" class="participants-container"></div>
-
-      <hr style="margin: 40px 0; border: 0; border-top: 1px solid rgba(245,181,46,.2);">
-
-      <h2 style="margin-bottom: 15px; color: var(--gold);">Gestión de Brackets</h2>
-      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <button id="btn-generate-brackets" style="width: auto; padding: 10px 20px;">Generar Brackets</button>
-        <button id="btn-reset-brackets" style="width: auto; padding: 10px 20px; background: #e94560; color: #fff;">Resetear Brackets</button>
-      </div>
-
-      <div id="winners-container"></div>
-      <div id="losers-container"></div>
-      <div id="grand-finals-container"></div>
-
-    </section>
-
-    <!-- 3. MODAL DE SELECCIÓN DE ESCENARIOS -->
-    <div id="stageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center;">
-      <div style="background: var(--panel); padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
-        <h3 id="stageInstruction" style="margin-bottom: 15px; color: var(--gold);"></h3>
-        <div id="stagesContainer" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;"></div>
-        <button id="btnConfirmStageAction">Confirmar Escenario</button>
-      </div>
-    </div>
-
+  <div class="login-box">
+    <h1>Panel de Administración</h1>
+    <form id="loginForm">
+      <input type="email" placeholder="Correo electrónico" required>
+      <input type="password" placeholder="Contraseña" required>
+      <button type="submit">INGRESAR</button>
+    </form>
   </div>
 
-  <!-- Carga de Supabase y Script de Administración -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="admin.js"></script>
 </body>
 </html>
