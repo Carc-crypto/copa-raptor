@@ -210,57 +210,57 @@ if (document.readyState === "loading") {
 
 async function loadBrackets() {
   try {
+    // 1. Obtener los sets de la base de datos sin joins de Supabase
     const { data: sets, error } = await supabaseClient
       .from("tournament_sets")
-      .select(`
-        *,
-        player1:participants!player1_id(id, gamertag),
-        player2:participants!player2_id(id, gamertag),
-        winner:participants!winner_id(id, gamertag)
-      `)
+      .select("*")
       .order("round_number", { ascending: true });
 
     if (error) throw error;
 
-    const winnersContainer =
-      document.getElementById("winners-container");
+    // 2. Obtener todos los participantes registrados
+    const { data: participants, error: pError } = await supabaseClient
+      .from("participants")
+      .select("id, gamertag");
 
-    const losersContainer =
-      document.getElementById("losers-container");
+    if (pError) throw pError;
 
-    const grandFinalsContainer =
-      document.getElementById("grand-finals-container");
+    // 3. Crear un mapa para buscar rápidamente los datos por ID
+    const participantMap = {};
+    if (participants) {
+      participants.forEach(p => {
+        participantMap[p.id] = p;
+      });
+    }
+
+    // 4. Inyectar la información de cada jugador en los sets
+    const enrichedSets = sets.map(s => ({
+      ...s,
+      player1: participantMap[s.player1_id] || null,
+      player2: participantMap[s.player2_id] || null,
+      winner: participantMap[s.winner_id] || null
+    }));
+
+    // 5. Renderizar en el DOM
+    const winnersContainer = document.getElementById("winners-container");
+    const losersContainer = document.getElementById("losers-container");
+    const grandFinalsContainer = document.getElementById("grand-finals-container");
 
     if (!winnersContainer || !losersContainer) return;
 
     winnersContainer.innerHTML = "";
     losersContainer.innerHTML = "";
+    if (grandFinalsContainer) grandFinalsContainer.innerHTML = "";
 
-    if (grandFinalsContainer) {
-      grandFinalsContainer.innerHTML = "";
-    }
-
-    if (!sets || sets.length === 0) {
-      winnersContainer.innerHTML =
-        "No hay partidas generadas aún.";
-
-      losersContainer.innerHTML =
-        "No hay partidas en Losers.";
-
+    if (!enrichedSets || enrichedSets.length === 0) {
+      winnersContainer.innerHTML = "No hay partidas generadas aún.";
+      losersContainer.innerHTML = "No hay partidas en Losers.";
       return;
     }
 
-    const winnersSets = sets.filter(
-      s => s.bracket_type === "winners"
-    );
-
-    const losersSets = sets.filter(
-      s => s.bracket_type === "losers"
-    );
-
-    const finalsSets = sets.filter(
-      s => s.bracket_type === "grand_finals"
-    );
+    const winnersSets = enrichedSets.filter(s => s.bracket_type === "winners");
+    const losersSets = enrichedSets.filter(s => s.bracket_type === "losers");
+    const finalsSets = enrichedSets.filter(s => s.bracket_type === "grand_finals");
 
     renderSetsList(winnersSets, winnersContainer);
     renderSetsList(losersSets, losersContainer);
@@ -270,10 +270,7 @@ async function loadBrackets() {
     }
 
   } catch (err) {
-    console.error(
-      "Error al cargar brackets:",
-      err.message
-    );
+    console.error("Error al cargar brackets:", err.message);
   }
 }
 
