@@ -19,7 +19,6 @@ function initDOMElements() {
   dashboardMessage = document.getElementById("dashboardMessage");
   logoutButton = document.getElementById("logoutButton");
 
-  // Asignación garantizada de los botones de Brackets
   const btnGenerate = document.getElementById("btn-generate-brackets");
   const btnReset = document.getElementById("btn-reset-brackets");
 
@@ -102,66 +101,51 @@ async function loadParticipants() {
   if (!data || data.length === 0) {
     if (participantsContainer) {
       participantsContainer.innerHTML = "No hay participantes registrados todavía.";
-    }
-    if (dashboardMessage) dashboardMessage.textContent = "";
-    return;
-  }
-
-  data.forEach((participant, index) => {
-    const card = document.createElement("article");
-    card.className = "participant";
-    card.innerHTML = `
-      <strong>PARTICIPANTE #${index + 1}</strong>
-      <div>Nombre: ${escapeHTML(participant.nombre)}</div>
-      <div>Gamertag: ${escapeHTML(participant.gamertag)}</div>
-      <div>Correo: ${escapeHTML(participant.correo)}</div>
-      <div>Edad: ${participant.edad}</div>
-      <div>Personaje: ${escapeHTML(participant.personaje)}</div>
-      <div>Ciudad: ${escapeHTML(participant.ciudad || "No indicada")}</div>
-      <div>Espíritu: ${escapeHTML(participant.espiritu)}</div>`;
-
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "btn-danger";
-    deleteBtn.style.cssText = "margin-top: 12px; padding: 8px 14px; font-size: 11px; width: 100%;";
-    deleteBtn.textContent = "ELIMINAR";
-    deleteBtn.addEventListener("click", () => deleteParticipant(participant.id, participant.gamertag));
-    card.appendChild(deleteBtn);
-    if (participantsContainer) participantsContainer.appendChild(card);
-  });
-
-  if (dashboardMessage) dashboardMessage.textContent = "";
 }
+if (dashboardMessage) dashboardMessage.textContent = "";
+return;
+}data.forEach((participant, index) => {
+const card = document.createElement("article");
+card.className = "participant";card.innerHTML = `
+PARTICIPANTE #${index + 1}Nombre: ${escapeHTML(participant.nombre)}Gamertag: ${escapeHTML(participant.gamertag)}Correo: ${escapeHTML(participant.correo)}Edad: ${participant.edad}Personaje: ${escapeHTML(participant.personaje)}Ciudad: ${escapeHTML(participant.ciudad || "No indicada")}Espíritu: ${escapeHTML(participant.espiritu)}`;
 
-// 3. ELIMINAR PARTICIPANTE
+const deleteBtn = document.createElement("button");
+deleteBtn.className = "btn-danger";
+deleteBtn.style.cssText = "margin-top: 12px; padding: 8px 14px; font-size: 11px; width: 100%;";
+deleteBtn.textContent = "ELIMINAR";
+deleteBtn.addEventListener("click", () => deleteParticipant(participant.id, participant.gamertag));
+
+card.appendChild(deleteBtn);
+if (participantsContainer) participantsContainer.appendChild(card);
+});if (dashboardMessage) dashboardMessage.textContent = "";
+}// 3. ELIMINAR PARTICIPANTE
 async function deleteParticipant(id, gamertag) {
-  const confirmed = confirm(`¿Estás seguro de que deseas eliminar al participante "${gamertag}"?`);
-  if (!confirmed) return;
+const confirmed = confirm("¿Estás seguro de que deseas eliminar al participante \"" + gamertag + "\"?");
+if (!confirmed) return;try {
+if (dashboardMessage) dashboardMessage.textContent = "Eliminando participante...";const { error } = await supabaseClient
+  .from("participants")
+  .delete()
+  .eq("id", id);
 
-  try {
-    if (dashboardMessage) dashboardMessage.textContent = "Eliminando participante...";
-    const { error } = await supabaseClient.from("participants").delete().eq("id", id);
-    if (error) {
-      alert(`No se pudo eliminar a "${gamertag}". Si las llaves ya fueron generadas, primero debes resetearlas.\nDetalle: ${error.message}`);
-      if (dashboardMessage) dashboardMessage.textContent = "";
-      return;
-    }
-    if (dashboardMessage) dashboardMessage.textContent = `Participante "${gamertag}" eliminado con éxito.`;
-    await loadParticipants();
-    await loadBrackets();
-  } catch (err) {
-    console.error("Error al eliminar participante:", err);
-    alert("Ocurrió un error inesperado al eliminar.");
-  }
+if (error) {
+  alert(`No se pudo eliminar a "\({gamertag}". Si las llaves ya fueron generadas, primero debes resetearlas.\nDetalle:\){error.message}`);
+  if (dashboardMessage) dashboardMessage.textContent = "";
+  return;
 }
 
-// 4. GENERAR Y RESETEAR BRACKETS
+if (dashboardMessage) dashboardMessage.textContent = `Participante "${gamertag}" eliminado con éxito.`;
+
+await loadParticipants();
+await loadBrackets();
+} catch (err) {
+console.error("Error al eliminar participante:", err);
+alert("Ocurrió un error inesperado al eliminar.");
+}
+}// 4. GENERAR Y RESETEAR BRACKETS
 async function generateBrackets() {
-  const confirmed = confirm("¿Deseas generar los enfrentamientos con los participantes actuales?");
-  if (!confirmed) return;
-  try {
-    if (dashboardMessage) dashboardMessage.textContent = "Generando brackets...";
-    // Obtener participantes ordenados por fecha
-const { data: participants, error: pError } = await supabaseClient
+const confirmed = confirm("¿Deseas generar los enfrentamientos con los participantes actuales?");
+if (!confirmed) return;try {
+if (dashboardMessage) dashboardMessage.textContent = "Generando brackets...";const { data: participants, error: pError } = await supabaseClient
   .from("participants")
   .select("id, gamertag")
   .order("created_at", { ascending: true });
@@ -174,17 +158,10 @@ if (!participants || participants.length < 2) {
   return;
 }
 
-// Limpiar tabla previa de brackets
-const { error: deleteError } = await supabaseClient
-  .from("tournament_sets")
-  .delete()
-  .not("id", "is", null);
+// Limpiar tablas previas
+await supabaseClient.from("stage_selections").delete().not("id", "is", null);
+await supabaseClient.from("tournament_sets").delete().not("id", "is", null);
 
-if (deleteError) {
-  console.warn("Advertencia al limpiar la tabla tournament_sets:", deleteError.message);
-}
-
-// Construir la Ronda 1 de Winners Bracket
 const setsToInsert = [];
 for (let i = 0; i < participants.length; i += 2) {
   const player1 = participants[i];
@@ -202,7 +179,6 @@ for (let i = 0; i < participants.length; i += 2) {
   });
 }
 
-// Insertar en Supabase
 const { error: insertError } = await supabaseClient
   .from("tournament_sets")
   .insert(setsToInsert);
@@ -213,25 +189,33 @@ if (insertError) {
 
 if (dashboardMessage) dashboardMessage.textContent = "¡Brackets generados con éxito!";
 await loadBrackets();
-} catch (err) {console.error("Error al generar brackets:", err);alert("Error al generar brackets: " + err.message);if (dashboardMessage) dashboardMessage.textContent = "";}}async function resetBrackets() {const confirmed = confirm("¿Estás seguro de que deseas resetear las llaves? Se borrarán todas las partidas actuales.");if (!confirmed) return;try {if (dashboardMessage) dashboardMessage.textContent = "Reseteando brackets...";const { error } = await supabaseClient
-  .from("tournament_sets")
-  .delete()
-  .not("id", "is", null);
+} catch (err) {
+console.error("Error al generar brackets:", err);
+alert("Error al generar brackets: " + err.message);
+if (dashboardMessage) dashboardMessage.textContent = "";
+}
+}async function resetBrackets() {
+const confirmed = confirm("¿Estás seguro de que deseas resetear las llaves? Se borrarán todas las partidas actuales.");
+if (!confirmed) return;try {
+if (dashboardMessage) dashboardMessage.textContent = "Reseteando brackets...";await supabaseClient.from("stage_selections").delete().not("id", "is", null);
+const { error } = await supabaseClient.from("tournament_sets").delete().not("id", "is", null);
 
 if (error) throw error;
 
 if (dashboardMessage) dashboardMessage.textContent = "Brackets reseteados correctamente.";
 await loadBrackets();
-} catch (err) {console.error("Error al resetear brackets:", err);alert("No se pudieron resetear los brackets: " + err.message);if (dashboardMessage) dashboardMessage.textContent = "";}}
-
-// 5. CARGAR Y RENDEREAR BRACKETS
+} catch (err) {
+console.error("Error al resetear brackets:", err);
+alert("No se pudieron resetear los brackets: " + err.message);
+if (dashboardMessage) dashboardMessage.textContent = "";
+}
+}// 5. CARGAR Y RENDEREAR BRACKETS
 async function loadBrackets() {
-  try {
-    const { data: sets, error } = await supabaseClient
-      .from("tournament_sets")
-      .select("*")
-      .order("round_number", { ascending: true });
-    if (error) throw error;
+try {
+const { data: sets, error } = await supabaseClient
+.from("tournament_sets")
+.select("*")
+.order("round_number", { ascending: true });if (error) throw error;
 
 const { data: participants, error: pError } = await supabaseClient
   .from("participants")
@@ -263,73 +247,153 @@ if (grandFinalsContainer) grandFinalsContainer.innerHTML = "";
 
 if (!enrichedSets || enrichedSets.length === 0) {
   winnersContainer.innerHTML = "No hay partidas generadas aún.";
-  losersContainer.innerHTML = "No hay partidas en Losers.";
-  return;
-}
-
-const winnersSets = enrichedSets.filter(s => s.bracket_type === "winners");
+losersContainer.innerHTML = "No hay partidas en Losers.";
+return;
+}const winnersSets = enrichedSets.filter(s => s.bracket_type === "winners");
 const losersSets = enrichedSets.filter(s => s.bracket_type === "losers");
 const finalsSets = enrichedSets.filter(s => s.bracket_type === "grand_finals");
 
 renderSetsList(winnersSets, winnersContainer);
 renderSetsList(losersSets, losersContainer);
 if (grandFinalsContainer) renderSetsList(finalsSets, grandFinalsContainer);
-  } catch (err) {
-  console.error("Error al cargar brackets:", err.message);
-  }
+} catch (err) {
+console.error("Error al cargar brackets:", err.message);
 }
-
-
+}// INTERFAZ INTERACTIVA PARA CADA SET
 function renderSetsList(sets, container) {
-  if (!sets || sets.length === 0) {
-    container.innerHTML = "Sin enfrentamientos en esta sección.";
-    return;
-  }
+if (!sets || sets.length === 0) {
+container.innerHTML = "Sin enfrentamientos en esta sección.";
+return;
+}container.innerHTML = "";
+sets.forEach(set => {
+const p1Name = set.player1 ? set.player1.gamertag : "TBD";
+const p2Name = set.player2 ? set.player2.gamertag : "TBD";const card = document.createElement("div");
+card.style.cssText = `
+  background: rgba(10, 20, 35, 0.95);
+  margin: 14px 0;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 5px solid ${set.status === 'completed' ? '#00e676' : '#f5b52e'};
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+`;
 
-  container.innerHTML = "";
-  sets.forEach(set => {
-    const p1 = set.player1 ? set.player1.gamertag : "TBD";
-    const p2 = set.player2 ? set.player2.gamertag : "TBD";
-    const card = document.createElement("div");
-card.style.cssText = "background: rgba(2, 10, 20, 0.9); margin: 10px 0; padding: 14px; border-radius: 6px; border-left: 4px solid #f5b52e; color: #fff;";
-
-const p1Score = set.p1_score || 0;
-const p2Score = set.p2_score || 0;
+const isCompleted = set.status === "completed";
+const winnerTag = set.winner ? set.winner.gamertag : "Ninguno";
 
 card.innerHTML = `
-Ronda ${set.round_number}Estado: ${escapeHTML(set.status)}${escapeHTML(p1)} vs ${escapeHTML(p2)}Marcador: ${p1Score} -${p2Score}`;
+Ronda ${set.round_number}${isCompleted ? 'FINALIZADO' : 'PENDIENTE'}${escapeHTML(p1Name)}VS${escapeHTML(p2Name)}Escenario Jugado:${isCompleted ? `🏆 Ganador: ${escapeHTML(winnerTag)}` : ''}${set.player1_id ? `Gana ${escapeHTML(p1Name)}
+` : ''}${set.player2_id ? `Gana ${escapeHTML(p2Name)}
+` : ''}💾 Guardar Marcador y Escenario`;
 
-    container.appendChild(card);
-  });
-}
+container.appendChild(card);
 
-function escapeHTML(value) {
-  if (value === null || value === undefined) return "";
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+// Asignar eventos a los botones de la tarjeta
+setTimeout(() => {
+  const btnWin1 = document.getElementById(`btn-win-p1-${set.id}`);
+  const btnWin2 = document.getElementById(`btn-win-p2-${set.id}`);
+  const btnSave = document.getElementById(`btn-save-${set.id}`);
 
-// INICIALIZAR VERIFICACIÓN DE SESIÓN
-async function checkSession() {
-  initDOMElements();
-  setupLoginForm();
-  if (!supabaseClient) return;
+  if (btnWin1) {
+    btnWin1.onclick = () => saveSetResult(set.id, set.player1_id, set.player1_id, set.player2_id);
+  }
+  if (btnWin2) {
+    btnWin2.onclick = () => saveSetResult(set.id, set.player2_id, set.player1_id, set.player2_id);
+  }
+  if (btnSave) {
+    btnSave.onclick = () => saveSetResult(set.id, null, set.player1_id, set.player2_id);
+  }
+}, 0);
+});
+}// FUNCIONALIDAD PARA GUARDAR SCORE, GANADOR Y ESCENARIO
+async function saveSetResult(setId, winnerId, player1Id, player2Id) {
+try {
+const p1Input = document.getElementById(`score-p1-${setId}`);
+const p2Input = document.getElementById(`score-p2-${setId}`);
+const stageSelect = document.getElementById(`stage-${setId}`);
+const p1Score = p1Input ? parseInt(p1Input.value, 10) || 0 : 0;
+const p2Score = p2Input ? parseInt(p2Input.value, 10) || 0 : 0;
+const stageName = stageSelect ? stageSelect.value : "";
 
-  const { data } = await supabaseClient.auth.getSession();
-  if (data?.session) {
-    await verifyAdmin(data.session.user);
-  } else {
-    if (loginSection) loginSection.style.display = "block";
-    if (dashboard) dashboard.style.display = "none";
+if (dashboardMessage) dashboardMessage.textContent = "Guardando resultado...";
+
+// Si se hace clic en un botón de ganador
+let finalStatus = "pending";
+let finalWinnerId = winnerId;
+
+if (winnerId) {
+  finalStatus = "completed";
+} else {
+  // Si solo se guarda el marcador y algún puntaje llegó a 2 o 3 (Bo3 / Bo5), o ya había ganador
+  if (p1Score > 0 || p2Score > 0) {
+    if (p1Score > p2Score && p1Score >= 2) {
+      finalWinnerId = player1Id;
+      finalStatus = "completed";
+    } else if (p2Score > p1Score && p2Score >= 2) {
+      finalWinnerId = player2Id;
+      finalStatus = "completed";
+    }
   }
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", checkSession);
+// Update en tournament_sets
+const updateData = {
+  p1_score: p1Score,
+  p2_score: p2Score,
+  status: finalStatus
+};
+if (finalWinnerId) {
+  updateData.winner_id = finalWinnerId;
+}
+
+const { error: setErr } = await supabaseClient
+  .from("tournament_sets")
+  .update(updateData)
+  .eq("id", setId);
+
+if (setErr) throw setErr;
+
+// Guardar escenario en stage_selections si fue elegido
+if (stageName) {
+  await supabaseClient
+    .from("stage_selections")
+    .insert({
+      set_id: setId,
+      stage_name: stageName,
+      status: "selected",
+      action_by: finalWinnerId || player1Id
+    });
+}
+
+if (dashboardMessage) dashboardMessage.textContent = "¡Resultado actualizado!";
+await loadBrackets();
+} catch (err) {
+console.error("Error al guardar resultado:", err);
+alert("No se pudo guardar el resultado: " + err.message);
+if (dashboardMessage) dashboardMessage.textContent = "";
+}
+}function escapeHTML(value) {
+if (value === null || value === undefined) return "";
+return String(value)
+.replaceAll("&", "&")
+.replaceAll("<", "<")
+.replaceAll(">", ">")
+.replaceAll('"', '&quot;')
+.replaceAll("'", "'");
+}// INICIALIZACIÓN
+async function checkSession() {
+initDOMElements();
+setupLoginForm();
+if (!supabaseClient) return;
+const { data } = await supabaseClient.auth.getSession();
+if (data?.session) {
+await verifyAdmin(data.session.user);
 } else {
-  checkSession();
+if (loginSection) loginSection.style.display = "block";
+if (dashboard) dashboard.style.display = "none";
+}
+}if (document.readyState === "loading") {
+document.addEventListener("DOMContentLoaded", checkSession);
+} else {
+checkSession();
 }
