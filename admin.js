@@ -220,3 +220,34 @@ if (document.readyState === "loading") {
 } else {
   checkSession();
 }
+async function deleteParticipant(id, gamertag) {
+  const confirmed = confirm(`¿Estás seguro de que deseas eliminar al participante "${gamertag}"?`);
+  if (!confirmed) return;
+
+  try {
+    if (dashboardMessage) dashboardMessage.textContent = "Eliminando participante...";
+
+    // Eliminar de Supabase por ID
+    const { error } = await supabaseClient
+      .from("participants")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      // Si el jugador ya está en un bracket activo, Supabase puede bloquear la eliminación
+      alert(`No se pudo eliminar a "\({gamertag}". Si las llaves ya fueron generadas, primero debes resetearlas.\nDetalle:\){error.message}`);
+      if (dashboardMessage) dashboardMessage.textContent = "";
+      return;
+    }
+
+    if (dashboardMessage) dashboardMessage.textContent = `Participante "${gamertag}" eliminado con éxito.`;
+
+    // Recargar la lista y los brackets para actualizar la interfaz
+    await loadParticipants();
+    await loadBrackets();
+
+  } catch (err) {
+    console.error("Error al eliminar participante:", err);
+    alert("Ocurrió un error inesperado al eliminar.");
+  }
+}

@@ -45,12 +45,12 @@ h1, h2, h3 {
   color: var(--gold);
 }
 
-/* --- CUADRO ENMARCADO PARA LA CABECERA PRINCIPAL --- */
+
 .header-box {
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 12px;
-  padding: 25px 30px;
+  padding: 20px 30px; 
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
   margin-bottom: 35px;
 }
@@ -66,16 +66,21 @@ h1, h2, h3 {
 .header-title-group {
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 28px; /* Mayor espacio entre el logo y el título */
 }
 
 .header-logo {
-  width: 85px;
-  height: 85px;
+  width: 140px; /* Aumentado de 85px a 140px */
+  height: 140px;
   object-fit: contain;
-  filter: drop-shadow(0 0 10px rgba(245, 181, 46, 0.4));
+  border-radius: 10px; /* Suaviza las esquinas de la imagen */
+  filter: drop-shadow(0 0 18px rgba(245, 181, 46, 0.5)); /* Resplandor dorado más pronunciado */
+  transition: transform 0.3s ease;
 }
 
+.header-logo:hover {
+  transform: scale(1.04); /* Pequeño efecto de zoom al pasar el cursor */
+}
 .dashboard-header h1 {
   font-size: 34px;
   font-weight: 900;
