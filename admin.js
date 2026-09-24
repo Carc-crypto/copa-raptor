@@ -261,51 +261,40 @@ console.error("Error al cargar brackets:", err.message);
 }
 }// INTERFAZ INTERACTIVA PARA CADA SET
 function renderSetsList(sets, container) {
-if (!sets || sets.length === 0) {
-container.innerHTML = "Sin enfrentamientos en esta sección.";
+  if (!sets || sets.length === 0) {
+    container.innerHTML = "Sin enfrentamientos en esta sección.";
 return;
 }container.innerHTML = "";
 sets.forEach(set => {
 const p1Name = set.player1 ? set.player1.gamertag : "TBD";
-const p2Name = set.player2 ? set.player2.gamertag : "TBD";const card = document.createElement("div");
-card.style.cssText = `
-  background: rgba(10, 20, 35, 0.95);
-  margin: 14px 0;
-  padding: 16px;
-  border-radius: 8px;
-  border-left: 5px solid ${set.status === 'completed' ? '#00e676' : '#f5b52e'};
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-`;
-
+const p2Name = set.player2 ? set.player2.gamertag : "TBD";
 const isCompleted = set.status === "completed";
-const winnerTag = set.winner ? set.winner.gamertag : "Ninguno";
+const winnerTag = set.winner ? set.winner.gamertag : "Ninguno";const card = document.createElement("div");
+card.className = `set-card ${isCompleted ? 'completed' : ''}`;
 
 card.innerHTML = `
-Ronda ${set.round_number}${isCompleted ? 'FINALIZADO' : 'PENDIENTE'}${escapeHTML(p1Name)}VS${escapeHTML(p2Name)}Escenario Jugado:${isCompleted ? `🏆 Ganador: ${escapeHTML(winnerTag)}` : ''}${set.player1_id ? `Gana ${escapeHTML(p1Name)}
-` : ''}${set.player2_id ? `Gana ${escapeHTML(p2Name)}
-` : ''}💾 Guardar Marcador y Escenario`;
+Ronda ${set.round_number} ${isCompleted ? 'FINALIZADO' : 'PENDIENTE'}
+${escapeHTML(p1Name)} VS ${escapeHTML(p2Name)}
+Escenario Jugado:
+${isCompleted ? `🏆 Ganador: ${escapeHTML(winnerTag)}` : ''}
+${set.player1_id ? `Gana ${escapeHTML(p1Name)}` : ''}
+${set.player2_id ? `Gana ${escapeHTML(p2Name)}` : ''}
+💾 Guardar Marcador y Escenario`;
 
 container.appendChild(card);
 
-// Asignar eventos a los botones de la tarjeta
 setTimeout(() => {
   const btnWin1 = document.getElementById(`btn-win-p1-${set.id}`);
   const btnWin2 = document.getElementById(`btn-win-p2-${set.id}`);
   const btnSave = document.getElementById(`btn-save-${set.id}`);
 
-  if (btnWin1) {
-    btnWin1.onclick = () => saveSetResult(set.id, set.player1_id, set.player1_id, set.player2_id);
-  }
-  if (btnWin2) {
-    btnWin2.onclick = () => saveSetResult(set.id, set.player2_id, set.player1_id, set.player2_id);
-  }
-  if (btnSave) {
-    btnSave.onclick = () => saveSetResult(set.id, null, set.player1_id, set.player2_id);
-  }
+  if (btnWin1) btnWin1.onclick = () => saveSetResult(set.id, set.player1_id, set.player1_id, set.player2_id);
+  if (btnWin2) btnWin2.onclick = () => saveSetResult(set.id, set.player2_id, set.player1_id, set.player2_id);
+  if (btnSave) btnSave.onclick = () => saveSetResult(set.id, null, set.player1_id, set.player2_id);
 }, 0);
 });
-}// FUNCIONALIDAD PARA GUARDAR SCORE, GANADOR Y ESCENARIO
+}
+// FUNCIONALIDAD PARA GUARDAR SCORE, GANADOR Y ESCENARIO
 async function saveSetResult(setId, winnerId, player1Id, player2Id) {
 try {
 const p1Input = document.getElementById(`score-p1-${setId}`);
