@@ -396,3 +396,12 @@ document.addEventListener("DOMContentLoaded", checkSession);
 } else {
 checkSession();
 }
+document.addEventListener("DOMContentLoaded", () => {
+  const rootElement = document.getElementById("tu-id-contenedor"); // Reemplaza por el ID correspondiente
+
+  if (rootElement) {
+    // Código que inicializa el componente usando rootElement
+  } else {
+    console.error("El elemento raíz no existe en esta página.");
+  }
+});
