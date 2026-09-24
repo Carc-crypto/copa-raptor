@@ -1,78 +1,78 @@
-<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Admin - Copa Raptor</title>
-  
-  <!-- Carga del CSS corregido -->
-  <link rel="stylesheet" href="admin.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Control - Copa Raptor 2026</title>
+  <link rel="stylesheet" href="admin.css?v=1000" />
 </head>
 <body>
 
-  <div class="admin-container">
+  
+  <section id="loginSection">
+    <h2>Copa Raptor 2026 - Acceso Admin</h2>
+    <form id="loginForm">
+      <input type="email" id="adminEmail" placeholder="Correo de Administrador" required />
+      <input type="password" id="adminPassword" placeholder="Contraseña" required />
+      <button type="submit" class="btn-action">Iniciar Sesión</button>
+    </form>
+    <p id="loginMessage"></p>
+  </section>
 
-    <!-- 1. SECCIÓN DE LOGIN (Combina id="loginSection" y class="login-box") -->
-    <section id="loginSection" class="login-box" style="display: block;">
-      <h1>Panel de Administración</h1>
-      <p>Ingresa tus credenciales para gestionar el torneo</p>
+  
+  <div id="dashboard" style="display: none;">
+    <header class="admin-header">
+      <h1>Panel de Control - Copa Raptor 2026</h1>
+      <button id="logoutButton" class="btn-danger">Cerrar Sesión</button>
+    </header>
 
-      <form id="loginForm">
-        <input type="email" id="adminEmail" placeholder="Correo electrónico" required>
-        <input type="password" id="adminPassword" placeholder="Contraseña" required>
-        <button type="submit">INGRESAR</button>
-      </form>
-
-      <p id="loginMessage" class="message"></p>
+    
+    <section class="admin-section">
+      <h2>Lista de Participantes (<span id="participantCount">0</span>)</h2>
+      <p id="dashboardMessage"></p>
+      <div id="participantsContainer" class="participants-grid"></div>
     </section>
 
-    <!-- 2. DASHBOARD DE ADMINISTRACIÓN -->
-    <section id="dashboard" style="display: none;">
-      
-      <header class="dashboard-header">
-        <div>
-          <p class="eyebrow">COPA RAPTOR 2026</p>
-          <h1>Panel de Control</h1>
+    <hr class="divider" />
+
+    
+    <section class="admin-section">
+      <h2>Gestión de Brackets</h2>
+      <div class="admin-actions">
+        <button id="btn-generate-brackets" class="btn-action">Generar Brackets</button>
+        <button id="btn-reset-brackets" class="btn-danger">Resetear Brackets</button>
+      </div>
+
+      <div class="brackets-wrapper">
+        <div class="bracket-column">
+          <h3>Winners Bracket</h3>
+          <div id="winners-container"></div>
         </div>
-        <button id="logoutButton" class="logout">Cerrar Sesión</button>
-      </header>
 
-      <p id="dashboardMessage" class="message"></p>
+        <div class="bracket-column">
+          <h3>Losers Bracket</h3>
+          <div id="losers-container"></div>
+        </div>
 
-      <div class="counter">
-        <span>Participantes Registrados</span>
-        <strong id="participantCount">0</strong>
+        <div class="bracket-column">
+          <h3>Grand Finals</h3>
+          <div id="grand-finals-container"></div>
+        </div>
       </div>
-
-      <h2 style="margin-bottom: 15px; color: var(--gold);">Lista de Participantes</h2>
-      <div id="participantsContainer" class="participants-container"></div>
-
-      < hr style="margin: 40px 0; border: 0; border-top: 1px solid rgba(245,181,46,.2);">
-
-      <h2 style="margin-bottom: 15px; color: var(--gold);">Gestión de Brackets</h2>
-      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <button id="btn-generate-brackets" style="width: auto; padding: 10px 20px;">Generar Brackets</button>
-        <button id="btn-reset-brackets" style="width: auto; padding: 10px 20px; background: #e94560; color: #fff;">Resetear Brackets</button>
-      </div>
-
-      <div id="winners-container"></div>
-      <div id="losers-container"></div>
-      <div id="grand-finals-container"></div>
-
     </section>
-
-    <!-- 3. MODAL DE SELECCIÓN DE ESCENARIOS -->
-    <div id="stageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center;">
-      <div style="background: var(--panel); padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
-        <h3 id="stageInstruction" style="margin-bottom: 15px; color: var(--gold);"></h3>
-        <div id="stagesContainer" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;"></div>
-        <button id="btnConfirmStageAction">Confirmar Escenario</button>
-      </div>
-    </div>
-
   </div>
 
+  
+  <div id="stageModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h3>Selección / Ban de Escenario</h3>
+      <p id="stageInstruction"></p>
+      <div id="stagesContainer" class="stages-grid"></div>
+      <button id="btnConfirmStageAction" class="btn-action" style="margin-top: 15px;">Confirmar</button>
+    </div>
+  </div>
+
+  
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-   <script src="admin.js?v=1000"></script>
- </body>
+  <script src="admin.js?v=1000"></script>
+</body>
 </html>
