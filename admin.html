@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Panel de Administración - Copa Raptor</title>
+  <title>Panel de Administración - Copa Raptor 2026</title>
 
   <link rel="stylesheet" href="admin.css">
 
@@ -14,20 +13,17 @@
 
 <body>
 
-  <div class="page-container">
+  <main class="admin-page">
 
-    <!-- =========================
-         LOGIN
-    ========================== -->
+    <section id="loginSection" class="login-card">
 
-    <section id="loginSection">
-
-      <h2>COPA RAPTOR 2026 - ACCESO ADMIN</h2>
+      <h2>COPA RAPTOR 2026</h2>
+      <p class="login-subtitle">ACCESO DE ADMINISTRADOR</p>
 
       <form id="loginForm">
 
         <div class="form-group">
-          <label for="adminEmail">Correo de Administrador</label>
+          <label for="adminEmail">Correo</label>
           <input
             type="email"
             id="adminEmail"
@@ -46,165 +42,111 @@
           >
         </div>
 
-        <button type="submit">
-          Iniciar Sesión
+        <button type="submit" class="btn-main">
+          INICIAR SESIÓN
         </button>
 
       </form>
 
-      <p id="loginMessage"></p>
+      <p id="loginMessage" class="login-message"></p>
 
     </section>
 
 
-    <!-- =========================
-         DASHBOARD
-    ========================== -->
-
-    <div id="dashboard">
-
-      <!-- CABECERA -->
+    <section id="dashboard" class="dashboard">
 
       <header class="dashboard-header">
 
         <div>
-          <h1>Panel - Copa Raptor</h1>
-          <span class="header-subtitle">
-            Administración del torneo
-          </span>
+          <h1>GESTIÓN DE BRACKETS</h1>
+          <p>⚡ COPA RAPTOR 2026</p>
         </div>
 
-        <button id="logoutButton" class="logout">
-          Cerrar Sesión
+        <button id="logoutButton" class="btn-logout">
+          CERRAR SESIÓN
         </button>
 
       </header>
 
 
-      <div id="dashboardMessage"></div>
+      <div id="dashboardMessage" class="dashboard-message"></div>
 
-
-      <!-- =========================
-           ACCIONES
-      ========================== -->
 
       <section class="admin-actions">
 
-        <button
-          id="btn-generate-brackets"
-          class="btn-action"
-        >
-          ⚡ Generar Brackets
+        <button id="btn-generate-brackets" class="btn-action">
+          ⚡ GENERAR BRACKETS
         </button>
 
-        <button
-          id="btn-reset-brackets"
-          class="btn-danger"
-        >
-          🔄 Resetear Brackets
+        <button id="btn-reset-brackets" class="btn-danger">
+          RESETear BRACKETS
         </button>
 
       </section>
 
-
-      <!-- =========================
-           PARTICIPANTES
-      ========================== -->
 
       <section class="participants-box">
 
-        <div class="participants-box-header">
-
-          <h2>
-            Participantes Registrados
-            (<span id="participantCount">0</span>)
-          </h2>
-
+        <div class="section-title">
+          <h2>PARTICIPANTES REGISTRADOS</h2>
+          <span id="participantCount" class="count-badge">0</span>
         </div>
 
-        <div id="participantsContainer">
-        </div>
+        <div id="participantsContainer" class="participants-container"></div>
 
       </section>
 
-
-      <!-- =========================
-           GESTIÓN DE BRACKETS
-      ========================== -->
 
       <section class="brackets-section">
 
-        <div class="brackets-title">
-
-          <h2>
-            Gestión de Enfrentamientos
-          </h2>
-
+        <div class="section-title main-bracket-title">
+          <h2>GESTIÓN DE ENFRENTAMIENTOS</h2>
         </div>
 
 
-        <div class="brackets-grid">
-
-
-          <!-- WINNERS -->
+        <div class="brackets-wrapper">
 
           <div class="bracket-column winners-column">
 
-            <div class="bracket-column-header">
-
-              <h3>
-                🏆 Winners Bracket
-              </h3>
-
+            <div class="bracket-heading">
+              <span class="bracket-icon">🏆</span>
+              <div>
+                <h3>WINNERS BRACKET</h3>
+                <p>Los ganadores continúan invictos</p>
+              </div>
             </div>
 
-            <div
-              id="winners-container"
-              class="sets-container"
-            >
-            </div>
+            <div id="winners-container" class="sets-container"></div>
 
           </div>
 
-
-          <!-- LOSERS -->
 
           <div class="bracket-column losers-column">
 
-            <div class="bracket-column-header">
-
-              <h3>
-                🔥 Losers Bracket
-              </h3>
-
+            <div class="bracket-heading">
+              <span class="bracket-icon">🔥</span>
+              <div>
+                <h3>LOSERS BRACKET</h3>
+                <p>Una segunda oportunidad</p>
+              </div>
             </div>
 
-            <div
-              id="losers-container"
-              class="sets-container"
-            >
-            </div>
+            <div id="losers-container" class="sets-container"></div>
 
           </div>
 
 
-          <!-- GRAND FINALS -->
-
           <div class="bracket-column finals-column">
 
-            <div class="bracket-column-header">
-
-              <h3>
-                🏆 Grand Finals
-              </h3>
-
+            <div class="bracket-heading">
+              <span class="bracket-icon">👑</span>
+              <div>
+                <h3>GRAND FINALS</h3>
+                <p>Campeonato y bracket reset</p>
+              </div>
             </div>
 
-            <div
-              id="grand-finals-container"
-              class="sets-container"
-            >
-            </div>
+            <div id="grand-finals-container" class="sets-container"></div>
 
           </div>
 
@@ -212,9 +154,9 @@
 
       </section>
 
-    </div>
+    </section>
 
-  </div>
+  </main>
 
 </body>
 </html>

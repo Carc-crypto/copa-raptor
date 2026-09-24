@@ -1,8 +1,8 @@
-const SUPABASE_URL = "https://gigcjdhnnjnrojentaev.supabase.co";
+const SUPABASE_URL =
+  "https://gigcjdhnnjnrojentaev.supabase.co";
 
 const SUPABASE_ANON_KEY =
   "sb_publishable_gBHOBIn8vmrgFWZdT0cgVg_prdJJmNC";
-
 
 const supabaseClient = window.supabase
   ? window.supabase.createClient(
@@ -12,9 +12,9 @@ const supabaseClient = window.supabase
   : null;
 
 
-/* =========================================================
-   VARIABLES GLOBALES
-   ========================================================= */
+/* ==========================================
+   VARIABLES
+========================================== */
 
 let loginForm;
 let loginSection;
@@ -27,9 +27,9 @@ let dashboardMessage;
 let logoutButton;
 
 
-/* =========================================================
+/* ==========================================
    INICIALIZAR DOM
-   ========================================================= */
+========================================== */
 
 function initDOMElements() {
 
@@ -46,17 +46,24 @@ function initDOMElements() {
     document.getElementById("loginMessage");
 
   participantsContainer =
-    document.getElementById("participantsContainer");
+    document.getElementById(
+      "participantsContainer"
+    );
 
   participantCount =
-    document.getElementById("participantCount");
+    document.getElementById(
+      "participantCount"
+    );
 
   dashboardMessage =
-    document.getElementById("dashboardMessage");
+    document.getElementById(
+      "dashboardMessage"
+    );
 
   logoutButton =
-    document.getElementById("logoutButton");
-
+    document.getElementById(
+      "logoutButton"
+    );
 
   const btnGenerate =
     document.getElementById(
@@ -68,206 +75,132 @@ function initDOMElements() {
       "btn-reset-brackets"
     );
 
-
   if (btnGenerate) {
-
-    btnGenerate.onclick =
-      generateBrackets;
-
+    btnGenerate.onclick = generateBrackets;
   }
-
 
   if (btnReset) {
-
-    btnReset.onclick =
-      resetBrackets;
-
+    btnReset.onclick = resetBrackets;
   }
-
 
   if (logoutButton) {
 
-    logoutButton.onclick =
-      async () => {
+    logoutButton.onclick = async () => {
 
-        await supabaseClient.auth.signOut();
+      await supabaseClient.auth.signOut();
 
-        window.location.reload();
+      window.location.reload();
 
-      };
+    };
 
   }
-
 }
 
 
-/* =========================================================
-   AUTENTICACIÓN
-   ========================================================= */
+/* ==========================================
+   LOGIN
+========================================== */
 
 function setupLoginForm() {
 
-  const form =
-    document.getElementById("loginForm");
-
-
-  if (!form || !supabaseClient) {
+  if (!loginForm || !supabaseClient) {
     return;
   }
 
-
-  form.addEventListener(
+  loginForm.addEventListener(
     "submit",
-    async (e) => {
+    async (event) => {
 
-      e.preventDefault();
-
-
-      const emailInput =
-        document.getElementById(
-          "adminEmail"
-        );
-
-      const passwordInput =
-        document.getElementById(
-          "adminPassword"
-        );
-
+      event.preventDefault();
 
       const email =
-        emailInput
-          ? emailInput.value.trim()
-          : "";
-
+        document.getElementById(
+          "adminEmail"
+        ).value.trim();
 
       const password =
-        passwordInput
-          ? passwordInput.value
-          : "";
+        document.getElementById(
+          "adminPassword"
+        ).value;
 
+      if (loginMessage) {
+        loginMessage.textContent =
+          "Verificando acceso...";
+      }
 
-      const {
-        data,
-        error
-      } =
-        await supabaseClient.auth.signInWithPassword(
-          {
+      const { data, error } =
+        await supabaseClient.auth
+          .signInWithPassword({
             email,
             password
-          }
-        );
-
+          });
 
       if (error) {
 
         if (loginMessage) {
-
           loginMessage.textContent =
-            "Error: " + error.message;
-
+            "Error: " +
+            error.message;
         }
 
         return;
-
       }
 
-
       if (data?.user) {
-
-        if (loginMessage) {
-
-          loginMessage.textContent =
-            "¡Bienvenido! Verificando permisos...";
-
-        }
-
         await verifyAdmin(data.user);
-
       }
 
     }
   );
-
 }
 
 
-/* =========================================================
+/* ==========================================
    VERIFICAR ADMIN
-   ========================================================= */
+========================================== */
 
 async function verifyAdmin(user) {
 
-  const {
-    data,
-    error
-  } =
+  const { data, error } =
     await supabaseClient
       .from("admin_users")
       .select("user_id")
       .eq("user_id", user.id)
       .maybeSingle();
 
-
   if (error || !data) {
 
     await supabaseClient.auth.signOut();
 
-
     if (loginMessage) {
-
       loginMessage.textContent =
         "Esta cuenta no tiene permisos de administrador.";
-
     }
 
     return;
-
   }
 
-
-  if (loginSection) {
-
-    loginSection.style.display =
-      "none";
-
-  }
-
-
-  if (dashboard) {
-
-    dashboard.style.display =
-      "block";
-
-  }
-
+  loginSection.style.display = "none";
+  dashboard.style.display = "block";
 
   initDOMElements();
 
   await loadParticipants();
-
   await loadBrackets();
-
 }
 
 
-/* =========================================================
+/* ==========================================
    PARTICIPANTES
-   ========================================================= */
+========================================== */
 
 async function loadParticipants() {
 
-  if (dashboardMessage) {
+  setMessage(
+    "Cargando participantes..."
+  );
 
-    dashboardMessage.textContent =
-      "Cargando participantes...";
-
-  }
-
-
-  const {
-    data,
-    error
-  } =
+  const { data, error } =
     await supabaseClient
       .from("participants")
       .select("*")
@@ -278,66 +211,33 @@ async function loadParticipants() {
         }
       );
 
-
   if (error) {
 
     console.error(error);
 
-
-    if (dashboardMessage) {
-
-      dashboardMessage.textContent =
-        "No se pudieron cargar los participantes.";
-
-    }
+    setMessage(
+      "No se pudieron cargar los participantes."
+    );
 
     return;
-
   }
 
+  participantCount.textContent =
+    data?.length || 0;
 
-  if (participantCount) {
-
-    participantCount.textContent =
-      data
-        ? data.length
-        : 0;
-
-  }
-
-
-  if (participantsContainer) {
-
-    participantsContainer.innerHTML =
-      "";
-
-  }
-
+  participantsContainer.innerHTML = "";
 
   if (!data || data.length === 0) {
 
-    if (participantsContainer) {
+    participantsContainer.innerHTML =
+      `<div class="empty-msg">
+        No hay participantes registrados todavía.
+      </div>`;
 
-      participantsContainer.innerHTML = `
-        <div class="empty-msg">
-          No hay participantes registrados todavía.
-        </div>
-      `;
-
-    }
-
-
-    if (dashboardMessage) {
-
-      dashboardMessage.textContent =
-        "";
-
-    }
+    setMessage("");
 
     return;
-
   }
-
 
   data.forEach(
     (participant, index) => {
@@ -347,10 +247,8 @@ async function loadParticipants() {
           "article"
         );
 
-
       card.className =
         "participant";
-
 
       card.innerHTML = `
         <h3>
@@ -392,77 +290,49 @@ async function loadParticipants() {
 
         <p>
           <strong>Espíritu:</strong>
-          ${escapeHTML(participant.espiritu)}
+          ${escapeHTML(
+            participant.espiritu
+          )}
         </p>
       `;
-
 
       const deleteBtn =
         document.createElement(
           "button"
         );
 
-
       deleteBtn.className =
         "btn-danger";
 
-
-      deleteBtn.style.cssText =
-        `
-          margin-top: 12px;
-          padding: 8px 14px;
-          font-size: 11px;
-          width: 100%;
-        `;
-
+      deleteBtn.style.width = "100%";
+      deleteBtn.style.marginTop = "12px";
 
       deleteBtn.textContent =
         "ELIMINAR";
 
-
-      deleteBtn.addEventListener(
-        "click",
-        () => {
-
+      deleteBtn.onclick =
+        () =>
           deleteParticipant(
             participant.id,
             participant.gamertag
           );
 
-        }
+      card.appendChild(deleteBtn);
+
+      participantsContainer.appendChild(
+        card
       );
-
-
-      card.appendChild(
-        deleteBtn
-      );
-
-
-      if (participantsContainer) {
-
-        participantsContainer.appendChild(
-          card
-        );
-
-      }
 
     }
   );
 
-
-  if (dashboardMessage) {
-
-    dashboardMessage.textContent =
-      "";
-
-  }
-
+  setMessage("");
 }
 
 
-/* =========================================================
+/* ==========================================
    ELIMINAR PARTICIPANTE
-   ========================================================= */
+========================================== */
 
 async function deleteParticipant(
   id,
@@ -471,122 +341,79 @@ async function deleteParticipant(
 
   const confirmed =
     confirm(
-      `¿Estás seguro de que deseas eliminar al participante "${gamertag}"?`
+      `¿Deseas eliminar a "${gamertag}"?`
     );
-
 
   if (!confirmed) {
     return;
   }
 
-
   try {
 
-    if (dashboardMessage) {
+    setMessage(
+      "Eliminando participante..."
+    );
 
-      dashboardMessage.textContent =
-        "Eliminando participante...";
-
-    }
-
-
-    const {
-      error
-    } =
+    const { error } =
       await supabaseClient
         .from("participants")
         .delete()
         .eq("id", id);
 
-
     if (error) {
-
-      alert(
-        `No se pudo eliminar a "${gamertag}". ` +
-        `Si las llaves ya fueron generadas, ` +
-        `primero debes resetearlas.\n\n` +
-        `Detalle: ${error.message}`
-      );
-
-
-      if (dashboardMessage) {
-
-        dashboardMessage.textContent =
-          "";
-
-      }
-
-      return;
-
+      throw error;
     }
-
-
-    if (dashboardMessage) {
-
-      dashboardMessage.textContent =
-        `Participante "${gamertag}" eliminado con éxito.`;
-
-    }
-
 
     await loadParticipants();
-
     await loadBrackets();
 
-
-  } catch (err) {
-
-    console.error(
-      "Error al eliminar participante:",
-      err
+    setMessage(
+      `Participante "${gamertag}" eliminado.`
     );
 
+  } catch (error) {
+
+    console.error(error);
 
     alert(
-      "Ocurrió un error inesperado al eliminar."
+      "No se pudo eliminar: " +
+      error.message
     );
 
+    setMessage("");
   }
-
 }
 
 
-/* =========================================================
-   GENERAR BRACKETS
-   ========================================================= */
+/* ==========================================
+   GENERAR BRACKET
+========================================== */
 
 async function generateBrackets() {
 
   const confirmed =
     confirm(
-      "¿Deseas generar los enfrentamientos con los participantes actuales?"
+      "¿Deseas generar un nuevo bracket? " +
+      "Esto eliminará el bracket actual."
     );
-
 
   if (!confirmed) {
     return;
   }
 
-
   try {
 
-    if (dashboardMessage) {
-
-      dashboardMessage.textContent =
-        "Generando brackets...";
-
-    }
-
+    setMessage(
+      "Generando doble eliminación..."
+    );
 
     const {
       data: participants,
-      error: pError
+      error
     } =
       await supabaseClient
         .from("participants")
-        .select(
-          "id, gamertag"
-        )
+        .select("id, gamertag")
         .order(
           "created_at",
           {
@@ -594,49 +421,1545 @@ async function generateBrackets() {
           }
         );
 
+    if (error) {
+      throw error;
+    }
 
-    if (pError) {
+    if (
+      !participants ||
+      participants.length < 4
+    ) {
 
-      throw new Error(
-        "Error al consultar participantes: " +
-        pError.message
+      alert(
+        "Se necesitan al menos 4 participantes."
       );
 
+      setMessage("");
+
+      return;
+    }
+
+    if (participants.length > 32) {
+
+      alert(
+        "Esta versión admite hasta 32 participantes."
+      );
+
+      setMessage("");
+
+      return;
+    }
+
+
+    /*
+      Para mantener el formato estándar de Smash,
+      el bracket se redondea a 4, 8, 16 o 32.
+    */
+
+    const bracketSize =
+      nextPowerOfTwo(
+        participants.length
+      );
+
+    if (bracketSize < 4) {
+      throw new Error(
+        "El bracket mínimo es de 4 participantes."
+      );
+    }
+
+
+    await supabaseClient
+      .from("tournament_sets")
+      .delete()
+      .not("id", "is", null);
+
+
+    await supabaseClient
+      .from("tournament_state")
+      .delete()
+      .not("id", "is", null);
+
+
+    const plan =
+      buildDoubleEliminationPlan(
+        participants,
+        bracketSize
+      );
+
+
+    const {
+      error: insertError
+    } =
+      await supabaseClient
+        .from("tournament_sets")
+        .insert(plan.matches);
+
+    if (insertError) {
+      throw insertError;
+    }
+
+
+    await supabaseClient
+      .from("tournament_state")
+      .insert({
+        id: 1,
+        status: "in_progress",
+        champion_id: null
+      });
+
+
+    await resolveInitialByes();
+
+    await loadBrackets();
+
+    setMessage(
+      "¡Bracket de doble eliminación generado!"
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Error generando bracket:",
+      error
+    );
+
+    alert(
+      "Error generando bracket:\n" +
+      error.message
+    );
+
+    setMessage("");
+  }
+}
+
+
+/* ==========================================
+   CONSTRUIR BRACKET
+========================================== */
+
+function buildDoubleEliminationPlan(
+  participants,
+  size
+) {
+
+  const matches = [];
+
+  const winnersRounds = [];
+
+  const losersRounds = [];
+
+  const winnersRoundCount =
+    Math.log2(size);
+
+  let displayNumber = 1;
+
+
+  /*
+    Orden de seeds estándar.
+    Ejemplo 8:
+    1,8,4,5,2,7,3,6
+  */
+
+  const seedOrder =
+    generateSeedOrder(size);
+
+
+  /*
+    WINNERS
+  */
+
+  for (
+    let round = 1;
+    round <= winnersRoundCount;
+    round++
+  ) {
+
+    const count =
+      size /
+      Math.pow(2, round);
+
+    const currentRound = [];
+
+    for (
+      let i = 0;
+      i < count;
+      i++
+    ) {
+
+      const id =
+        crypto.randomUUID();
+
+      const match = {
+
+        id,
+
+        bracket_type:
+          "winners",
+
+        bracket_round:
+          round,
+
+        round_number:
+          round,
+
+        match_number:
+          displayNumber++,
+
+        player1_id: null,
+        player2_id: null,
+
+        p1_score: 0,
+        p2_score: 0,
+
+        best_of:
+          round === winnersRoundCount
+            ? 5
+            : 3,
+
+        status:
+          "pending",
+
+        winner_id: null,
+        loser_id: null,
+
+        next_match_winner_id:
+          null,
+
+        next_match_winner_slot:
+          null,
+
+        next_match_loser_id:
+          null,
+
+        next_match_loser_slot:
+          null,
+
+        stage_name:
+          null,
+
+        is_reset:
+          false
+      };
+
+
+      /*
+        Primera ronda:
+        colocar participantes.
+      */
+
+      if (round === 1) {
+
+        const seed1 =
+          seedOrder[i * 2];
+
+        const seed2 =
+          seedOrder[i * 2 + 1];
+
+        match.player1_id =
+          participants[
+            seed1 - 1
+          ]?.id
+          ? String(
+              participants[
+                seed1 - 1
+              ].id
+            )
+          : null;
+
+        match.player2_id =
+          participants[
+            seed2 - 1
+          ]?.id
+          ? String(
+              participants[
+                seed2 - 1
+              ].id
+            )
+          : null;
+      }
+
+
+      currentRound.push(
+        match
+      );
+
+      matches.push(match);
+    }
+
+    winnersRounds.push(
+      currentRound
+    );
+  }
+
+
+  /*
+    CONEXIONES WINNERS
+  */
+
+  for (
+    let round = 0;
+    round < winnersRoundCount;
+    round++
+  ) {
+
+    const current =
+      winnersRounds[round];
+
+    const next =
+      winnersRounds[round + 1];
+
+
+    current.forEach(
+      (match, index) => {
+
+        /*
+          GANADOR → siguiente Winners
+        */
+
+        if (next) {
+
+          const destination =
+            next[
+              Math.floor(index / 2)
+            ];
+
+          match.next_match_winner_id =
+            destination.id;
+
+          match.next_match_winner_slot =
+            index % 2 === 0
+              ? 1
+              : 2;
+        }
+
+
+        /*
+          PERDEDOR → LOSERS
+        */
+
+        if (round === 0) {
+
+          const loserRound =
+            losersRounds[0];
+
+          if (loserRound) {
+
+            const destination =
+              loserRound[
+                Math.floor(index / 2)
+              ];
+
+            match.next_match_loser_id =
+              destination.id;
+
+            match.next_match_loser_slot =
+              index % 2 === 0
+                ? 1
+                : 2;
+          }
+
+        } else {
+
+          const loserRoundIndex =
+            round * 2 - 1;
+
+          const loserRound =
+            losersRounds[
+              loserRoundIndex
+            ];
+
+          if (loserRound) {
+
+            /*
+              Se invierte el orden de entrada
+              para evitar rematches inmediatos.
+            */
+
+            const destination =
+              loserRound[
+                loserRound.length -
+                1 -
+                index
+              ];
+
+            match.next_match_loser_id =
+              destination.id;
+
+            match.next_match_loser_slot =
+              1;
+          }
+        }
+
+      }
+    );
+  }
+
+
+  /*
+    LOSERS
+  */
+
+  const loserRoundCount =
+    winnersRoundCount * 2 - 2;
+
+
+  for (
+    let round = 1;
+    round <= loserRoundCount;
+    round++
+  ) {
+
+    const count =
+      size /
+      Math.pow(
+        2,
+        Math.ceil(
+          round / 2
+        ) + 1
+      );
+
+    const currentRound = [];
+
+    for (
+      let i = 0;
+      i < count;
+      i++
+    ) {
+
+      const match = {
+
+        id:
+          crypto.randomUUID(),
+
+        bracket_type:
+          "losers",
+
+        bracket_round:
+          round,
+
+        round_number:
+          round,
+
+        match_number:
+          displayNumber++,
+
+        player1_id: null,
+        player2_id: null,
+
+        p1_score: 0,
+        p2_score: 0,
+
+        best_of:
+          round === loserRoundCount
+            ? 5
+            : 3,
+
+        status:
+          "pending",
+
+        winner_id: null,
+        loser_id: null,
+
+        next_match_winner_id:
+          null,
+
+        next_match_winner_slot:
+          null,
+
+        next_match_loser_id:
+          null,
+
+        next_match_loser_slot:
+          null,
+
+        stage_name:
+          null,
+
+        is_reset:
+          false
+      };
+
+      currentRound.push(match);
+
+      matches.push(match);
+    }
+
+    losersRounds.push(
+      currentRound
+    );
+  }
+
+
+  /*
+    CONEXIONES LOSERS
+  */
+
+  for (
+    let r = 0;
+    r < losersRounds.length;
+    r++
+  ) {
+
+    const current =
+      losersRounds[r];
+
+    const next =
+      losersRounds[r + 1];
+
+
+    current.forEach(
+      (match, index) => {
+
+        if (!next) {
+          return;
+        }
+
+
+        if (
+          (r + 1) % 2 === 1
+        ) {
+
+          /*
+            Round impar:
+            Losers vs Losers
+          */
+
+          const destination =
+            next[
+              Math.floor(index / 2)
+            ];
+
+          match.next_match_winner_id =
+            destination.id;
+
+          match.next_match_winner_slot =
+            index % 2 === 0
+              ? 1
+              : 2;
+
+        } else {
+
+          /*
+            Round par:
+            survivor vs drop-in de Winners
+          */
+
+          const destination =
+            next[
+              Math.floor(index / 2)
+            ];
+
+          match.next_match_winner_id =
+            destination.id;
+
+          match.next_match_winner_slot =
+            index % 2 === 0
+              ? 1
+              : 2;
+        }
+
+      }
+    );
+  }
+
+
+  /*
+    GRAND FINALS
+  */
+
+  const winnersFinal =
+    winnersRounds[
+      winnersRounds.length - 1
+    ][0];
+
+  const losersFinal =
+    losersRounds[
+      losersRounds.length - 1
+    ][0];
+
+
+  const grandFinal1 = {
+
+    id:
+      crypto.randomUUID(),
+
+    bracket_type:
+      "grand_finals",
+
+    bracket_round:
+      1,
+
+    round_number:
+      1,
+
+    match_number:
+      displayNumber++,
+
+    player1_id:
+      null,
+
+    player2_id:
+      null,
+
+    p1_score: 0,
+    p2_score: 0,
+
+    best_of: 5,
+
+    status:
+      "pending",
+
+    winner_id: null,
+    loser_id: null,
+
+    next_match_winner_id:
+      null,
+
+    next_match_winner_slot:
+      null,
+
+    next_match_loser_id:
+      null,
+
+    next_match_loser_slot:
+      null,
+
+    stage_name:
+      null,
+
+    is_reset:
+      false
+  };
+
+
+  const grandFinal2 = {
+
+    id:
+      crypto.randomUUID(),
+
+    bracket_type:
+      "grand_finals",
+
+    bracket_round:
+      2,
+
+    round_number:
+      2,
+
+    match_number:
+      displayNumber++,
+
+    player1_id:
+      null,
+
+    player2_id:
+      null,
+
+    p1_score: 0,
+    p2_score: 0,
+
+    best_of: 5,
+
+    status:
+      "locked",
+
+    winner_id: null,
+    loser_id: null,
+
+    next_match_winner_id:
+      null,
+
+    next_match_winner_slot:
+      null,
+
+    next_match_loser_id:
+      null,
+
+    next_match_loser_slot:
+      null,
+
+    stage_name:
+      null,
+
+    is_reset:
+      true
+  };
+
+
+  winnersFinal.next_match_winner_id =
+    grandFinal1.id;
+
+  winnersFinal.next_match_winner_slot =
+    1;
+
+
+  losersFinal.next_match_winner_id =
+    grandFinal1.id;
+
+  losersFinal.next_match_winner_slot =
+    2;
+
+
+  winnersFinal.next_match_loser_id =
+    losersFinal.id;
+
+  winnersFinal.next_match_loser_slot =
+    2;
+
+
+  grandFinal1.next_match_winner_id =
+    grandFinal2.id;
+
+  grandFinal1.next_match_winner_slot =
+    1;
+
+
+  matches.push(
+    grandFinal1,
+    grandFinal2
+  );
+
+
+  return {
+    matches
+  };
+}
+
+
+/* ==========================================
+   ORDEN DE SEEDS
+========================================== */
+
+function generateSeedOrder(size) {
+
+  let order = [1];
+
+  for (
+    let current = 2;
+    current <= size;
+    current *= 2
+  ) {
+
+    const next = [];
+
+    const max = current;
+
+    order.forEach(
+      seed => {
+
+        next.push(seed);
+
+        next.push(
+          max + 1 - seed
+        );
+
+      }
+    );
+
+    order = next;
+  }
+
+  return order;
+}
+
+
+/* ==========================================
+   BYES
+========================================== */
+
+async function resolveInitialByes() {
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from("tournament_sets")
+      .select("*")
+      .eq(
+        "bracket_type",
+        "winners"
+      )
+      .eq(
+        "bracket_round",
+        1
+      );
+
+  if (error) {
+    throw error;
+  }
+
+  for (const match of data || []) {
+
+    if (
+      match.player1_id &&
+      !match.player2_id
+    ) {
+
+      await completeBye(
+        match,
+        match.player1_id
+      );
+
+    } else if (
+      !match.player1_id &&
+      match.player2_id
+    ) {
+
+      await completeBye(
+        match,
+        match.player2_id
+      );
+
+    }
+  }
+}
+
+
+async function completeBye(
+  match,
+  playerId
+) {
+
+  await supabaseClient
+    .from("tournament_sets")
+    .update({
+      status: "completed",
+      winner_id: playerId,
+      loser_id: null,
+      p1_score:
+        match.player1_id
+          ? 1
+          : 0,
+      p2_score:
+        match.player2_id
+          ? 1
+          : 0
+    })
+    .eq(
+      "id",
+      match.id
+    );
+
+  await advanceWinnerAndLoser(
+    match.id,
+    playerId,
+    null
+  );
+}
+
+
+/* ==========================================
+   ACTUALIZAR SCORE
+========================================== */
+
+async function updateMatchScore(
+  matchId,
+  player1Score,
+  player2Score
+) {
+
+  const p1 =
+    Math.max(
+      0,
+      parseInt(
+        player1Score,
+        10
+      ) || 0
+    );
+
+  const p2 =
+    Math.max(
+      0,
+      parseInt(
+        player2Score,
+        10
+      ) || 0
+    );
+
+
+  const { data: match, error } =
+    await supabaseClient
+      .from("tournament_sets")
+      .select("best_of,status")
+      .eq(
+        "id",
+        matchId
+      )
+      .single();
+
+  if (error) {
+    throw error;
+  }
+
+
+  if (
+    match.status === "completed"
+  ) {
+    return;
+  }
+
+
+  const target =
+    match.best_of === 5
+      ? 3
+      : 2;
+
+
+  let status = "in_progress";
+
+
+  if (
+    p1 >= target ||
+    p2 >= target
+  ) {
+    status = "completed";
+  }
+
+
+  const { error: updateError } =
+    await supabaseClient
+      .from("tournament_sets")
+      .update({
+        p1_score: p1,
+        p2_score: p2,
+        status
+      })
+      .eq(
+        "id",
+        matchId
+      );
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  return {
+    player1Score: p1,
+    player2Score: p2,
+    completed:
+      status === "completed"
+  };
+}
+
+
+/* ==========================================
+   GUARDAR SET
+========================================== */
+
+async function saveSet(
+  matchId
+) {
+
+  try {
+
+    const p1Input =
+      document.getElementById(
+        `score-p1-${matchId}`
+      );
+
+    const p2Input =
+      document.getElementById(
+        `score-p2-${matchId}`
+      );
+
+    const format =
+      document.getElementById(
+        `format-${matchId}`
+      );
+
+    const stage =
+      document.getElementById(
+        `stage-${matchId}`
+      );
+
+
+    const p1 =
+      parseInt(
+        p1Input?.value || 0,
+        10
+      );
+
+    const p2 =
+      parseInt(
+        p2Input?.value || 0,
+        10
+      );
+
+
+    const bestOf =
+      parseInt(
+        format?.value || 3,
+        10
+      );
+
+
+    const target =
+      bestOf === 5
+        ? 3
+        : 2;
+
+
+    if (
+      (p1 !== target &&
+        p2 !== target) ||
+      p1 === p2
+    ) {
+
+      alert(
+        `El marcador debe terminar en ${target} para el ganador.`
+      );
+
+      return;
     }
 
 
     if (
-      !participants ||
-      participants.length < 2
+      (p1 > target) ||
+      (p2 > target)
     ) {
 
       alert(
-        "Se necesitan al menos 2 participantes para generar los enfrentamientos."
+        "El marcador no puede superar el límite del formato."
+      );
+
+      return;
+    }
+
+
+    await supabaseClient
+      .from("tournament_sets")
+      .update({
+        best_of: bestOf,
+        stage_name:
+          stage?.value || null
+      })
+      .eq(
+        "id",
+        matchId
       );
 
 
-      if (dashboardMessage) {
+    await updateMatchScore(
+      matchId,
+      p1,
+      p2
+    );
 
-        dashboardMessage.textContent =
-          "";
 
-      }
+    const {
+      data: match,
+      error
+    } =
+      await supabaseClient
+        .from("tournament_sets")
+        .select("*")
+        .eq(
+          "id",
+          matchId
+        )
+        .single();
 
-      return;
+    if (error) {
+      throw error;
+    }
+
+
+    const winnerId =
+      p1 > p2
+        ? match.player1_id
+        : match.player2_id;
+
+    const loserId =
+      p1 > p2
+        ? match.player2_id
+        : match.player1_id;
+
+
+    await advanceWinnerAndLoser(
+      matchId,
+      winnerId,
+      loserId
+    );
+
+
+    if (
+      match.bracket_type ===
+      "grand_finals"
+    ) {
+
+      await handleGrandFinals(
+        matchId,
+        winnerId,
+        winnerId ===
+          match.player2_id
+      );
 
     }
 
 
-    /* LIMPIAR DATOS ANTERIORES */
+    await loadBrackets();
 
+    setMessage(
+      "¡Set guardado correctamente!"
+    );
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "No se pudo guardar el set:\n" +
+      error.message
+    );
+  }
+}
+
+
+/* ==========================================
+   DECLARAR GANADOR MANUALMENTE
+========================================== */
+
+async function declareWinner(
+  matchId,
+  playerNumber
+) {
+
+  const {
+    data: match,
+    error
+  } =
     await supabaseClient
-      .from("stage_selections")
-      .delete()
-      .not(
+      .from("tournament_sets")
+      .select("*")
+      .eq(
         "id",
-        "is",
-        null
-      );
+        matchId
+      )
+      .single();
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+
+  const target =
+    match.best_of === 5
+      ? 3
+      : 2;
+
+
+  const winnerId =
+    playerNumber === 1
+      ? match.player1_id
+      : match.player2_id;
+
+  const loserId =
+    playerNumber === 1
+      ? match.player2_id
+      : match.player1_id;
+
+
+  if (!winnerId || !loserId) {
+    return;
+  }
+
+
+  const scores =
+    playerNumber === 1
+      ? {
+          p1_score: target,
+          p2_score: 0
+        }
+      : {
+          p1_score: 0,
+          p2_score: target
+        };
+
+
+  await supabaseClient
+    .from("tournament_sets")
+    .update({
+      ...scores,
+      status: "completed",
+      winner_id: winnerId,
+      loser_id: loserId
+    })
+    .eq(
+      "id",
+      matchId
+    );
+
+
+  await advanceWinnerAndLoser(
+    matchId,
+    winnerId,
+    loserId
+  );
+
+
+  if (
+    match.bracket_type ===
+    "grand_finals"
+  ) {
+
+    await handleGrandFinals(
+      matchId,
+      winnerId,
+      winnerId ===
+        match.player2_id
+    );
+
+  }
+
+
+  await loadBrackets();
+}
+
+
+/* ==========================================
+   AVANCE WINNER / LOSER
+========================================== */
+
+async function advanceWinnerAndLoser(
+  matchId,
+  winnerId,
+  loserId
+) {
+
+  const {
+    data: match,
+    error
+  } =
+    await supabaseClient
+      .from("tournament_sets")
+      .select("*")
+      .eq(
+        "id",
+        matchId
+      )
+      .single();
+
+  if (error) {
+    throw error;
+  }
+
+
+  await supabaseClient
+    .from("tournament_sets")
+    .update({
+      winner_id:
+        winnerId || null,
+
+      loser_id:
+        loserId || null,
+
+      status:
+        "completed"
+    })
+    .eq(
+      "id",
+      matchId
+    );
+
+
+  /*
+    WINNER
+  */
+
+  if (
+    winnerId &&
+    match.next_match_winner_id
+  ) {
+
+    await putPlayerInMatch(
+      match.next_match_winner_id,
+      match.next_match_winner_slot,
+      winnerId
+    );
+
+  }
+
+
+  /*
+    LOSER
+  */
+
+  if (
+    loserId &&
+    match.next_match_loser_id
+  ) {
+
+    await putPlayerInMatch(
+      match.next_match_loser_id,
+      match.next_match_loser_slot,
+      loserId
+    );
+
+  }
+
+
+  /*
+    Si perdió en Losers,
+    queda eliminado.
+  */
+
+  if (
+    loserId &&
+    match.bracket_type ===
+    "losers" &&
+    !match.next_match_loser_id
+  ) {
+
+    console.log(
+      "Jugador eliminado:",
+      loserId
+    );
+  }
+}
+
+
+/* ==========================================
+   COLOCAR JUGADOR EN SIGUIENTE SET
+========================================== */
+
+async function putPlayerInMatch(
+  matchId,
+  slot,
+  playerId
+) {
+
+  if (!matchId || !playerId) {
+    return;
+  }
+
+
+  const {
+    data: destination,
+    error
+  } =
+    await supabaseClient
+      .from("tournament_sets")
+      .select(
+        "player1_id,player2_id,status"
+      )
+      .eq(
+        "id",
+        matchId
+      )
+      .single();
+
+  if (error) {
+    throw error;
+  }
+
+
+  const field =
+    slot === 1
+      ? "player1_id"
+      : "player2_id";
+
+
+  /*
+    No sobrescribir un jugador
+    que ya llegó correctamente.
+  */
+
+  if (
+    destination[field] &&
+    String(
+      destination[field]
+    ) !== String(playerId)
+  ) {
+
+    throw new Error(
+      "Error de bracket: el espacio ya está ocupado."
+    );
+  }
+
+
+  await supabaseClient
+    .from("tournament_sets")
+    .update({
+      [field]:
+        String(playerId),
+
+      status:
+        destination.status ===
+        "locked"
+          ? "pending"
+          : destination.status
+    })
+    .eq(
+      "id",
+      matchId
+    );
+}
+
+
+/* ==========================================
+   GRAND FINALS
+========================================== */
+
+async function handleGrandFinals(
+  matchId,
+  winnerId,
+  isLoserChampion
+) {
+
+  const {
+    data: match,
+    error
+  } =
+    await supabaseClient
+      .from("tournament_sets")
+      .select("*")
+      .eq(
+        "id",
+        matchId
+      )
+      .single();
+
+  if (error) {
+    throw error;
+  }
+
+
+  /*
+    GF1
+  */
+
+  if (
+    match.bracket_round === 1
+  ) {
+
+    /*
+      Ganó el jugador que venía
+      de Losers.
+    */
+
+    if (isLoserChampion) {
+
+      const {
+        data: reset
+      } =
+        await supabaseClient
+          .from("tournament_sets")
+          .select("*")
+          .eq(
+            "is_reset",
+            true
+          )
+          .single();
+
+
+      if (reset) {
+
+        await supabaseClient
+          .from("tournament_sets")
+          .update({
+            player1_id:
+              match.player1_id,
+
+            player2_id:
+              match.player2_id,
+
+            status:
+              "pending",
+
+            p1_score: 0,
+            p2_score: 0,
+
+            winner_id: null,
+            loser_id: null
+          })
+          .eq(
+            "id",
+            reset.id
+          );
+
+        setMessage(
+          "🔥 BRACKET RESET ACTIVADO — GRAND FINALS SET 2"
+        );
+      }
+
+      return;
+    }
+
+
+    /*
+      Ganó el Winners Champion.
+      TORNEO TERMINADO.
+    */
+
+    await finishTournament(
+      winnerId
+    );
+
+    return;
+  }
+
+
+  /*
+    GF2
+  */
+
+  if (
+    match.bracket_round === 2
+  ) {
+
+    await finishTournament(
+      winnerId
+    );
+  }
+}
+
+
+/* ==========================================
+   TERMINAR TORNEO
+========================================== */
+
+async function finishTournament(
+  championId
+) {
+
+  await supabaseClient
+    .from("tournament_state")
+    .upsert({
+      id: 1,
+      status: "completed",
+      champion_id:
+        String(championId)
+    });
+
+  setMessage(
+    "🏆 ¡TORNEO FINALIZADO!"
+  );
+}
+
+
+/* ==========================================
+   RESET
+========================================== */
+
+async function resetBrackets() {
+
+  const confirmed =
+    confirm(
+      "¿Seguro que deseas resetear TODO el bracket?"
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    setMessage(
+      "Reseteando brackets..."
+    );
 
 
     await supabaseClient
@@ -649,143 +1972,8 @@ async function generateBrackets() {
       );
 
 
-    const setsToInsert = [];
-
-
-    for (
-      let i = 0;
-      i < participants.length;
-      i += 2
-    ) {
-
-      const player1 =
-        participants[i];
-
-      const player2 =
-        participants[i + 1] ||
-        null;
-
-
-      setsToInsert.push({
-
-        round_number: 1,
-
-        bracket_type: "winners",
-
-        player1_id:
-          player1.id,
-
-        player2_id:
-          player2
-            ? player2.id
-            : null,
-
-        p1_score: 0,
-
-        p2_score: 0,
-
-        status:
-          player2
-            ? "pending"
-            : "completed",
-
-        winner_id:
-          player2
-            ? null
-            : player1.id
-
-      });
-
-    }
-
-
-    const {
-      error: insertError
-    } =
-      await supabaseClient
-        .from("tournament_sets")
-        .insert(
-          setsToInsert
-        );
-
-
-    if (insertError) {
-
-      throw new Error(
-        "Supabase rechazó la inserción: " +
-        insertError.message
-      );
-
-    }
-
-
-    if (dashboardMessage) {
-
-      dashboardMessage.textContent =
-        "¡Brackets generados con éxito!";
-
-    }
-
-
-    await loadBrackets();
-
-
-  } catch (err) {
-
-    console.error(
-      "Error al generar brackets:",
-      err
-    );
-
-
-    alert(
-      "Error al generar brackets: " +
-      err.message
-    );
-
-
-    if (dashboardMessage) {
-
-      dashboardMessage.textContent =
-        "";
-
-    }
-
-  }
-
-}
-
-
-/* =========================================================
-   RESETEAR BRACKETS
-   ========================================================= */
-
-async function resetBrackets() {
-
-  const confirmed =
-    confirm(
-      "¿Estás seguro de que deseas resetear las llaves? " +
-      "Se borrarán todas las partidas actuales."
-    );
-
-
-  if (!confirmed) {
-    return;
-  }
-
-
-  try {
-
-    if (dashboardMessage) {
-
-      dashboardMessage.textContent =
-        "Reseteando brackets...";
-
-    }
-
-
     await supabaseClient
-      .from("stage_selections")
+      .from("tournament_state")
       .delete()
       .not(
         "id",
@@ -794,64 +1982,29 @@ async function resetBrackets() {
       );
 
 
-    const {
-      error
-    } =
-      await supabaseClient
-        .from("tournament_sets")
-        .delete()
-        .not(
-          "id",
-          "is",
-          null
-        );
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    if (dashboardMessage) {
-
-      dashboardMessage.textContent =
-        "Brackets reseteados correctamente.";
-
-    }
-
-
     await loadBrackets();
 
 
-  } catch (err) {
-
-    console.error(
-      "Error al resetear brackets:",
-      err
+    setMessage(
+      "Brackets reseteados."
     );
 
+  } catch (error) {
+
+    console.error(error);
 
     alert(
-      "No se pudieron resetear los brackets: " +
-      err.message
+      "No se pudieron resetear:\n" +
+      error.message
     );
 
-
-    if (dashboardMessage) {
-
-      dashboardMessage.textContent =
-        "";
-
-    }
-
   }
-
 }
 
 
-/* =========================================================
+/* ==========================================
    CARGAR BRACKETS
-   ========================================================= */
+========================================== */
 
 async function loadBrackets() {
 
@@ -865,12 +2018,11 @@ async function loadBrackets() {
         .from("tournament_sets")
         .select("*")
         .order(
-          "round_number",
+          "match_number",
           {
             ascending: true
           }
         );
-
 
     if (error) {
       throw error;
@@ -878,201 +2030,127 @@ async function loadBrackets() {
 
 
     const {
-      data: participants,
-      error: pError
+      data: participants
     } =
       await supabaseClient
         .from("participants")
         .select(
-          "id, gamertag"
+          "id,gamertag"
         );
-
-
-    if (pError) {
-      throw pError;
-    }
 
 
     const participantMap = {};
 
 
-    if (participants) {
-
-      participants.forEach(
-        (participant) => {
+    (participants || [])
+      .forEach(
+        participant => {
 
           participantMap[
-            participant.id
+            String(
+              participant.id
+            )
           ] = participant;
 
         }
       );
 
-    }
 
-
-    const enrichedSets =
+    const enriched =
       (sets || []).map(
-        (set) => ({
+        set => ({
 
           ...set,
 
           player1:
             participantMap[
-              set.player1_id
+              String(
+                set.player1_id
+              )
             ] || null,
 
           player2:
             participantMap[
-              set.player2_id
+              String(
+                set.player2_id
+              )
             ] || null,
 
           winner:
             participantMap[
-              set.winner_id
+              String(
+                set.winner_id
+              )
             ] || null
 
         })
       );
 
 
-    const winnersContainer =
+    const winners =
       document.getElementById(
         "winners-container"
       );
 
-
-    const losersContainer =
+    const losers =
       document.getElementById(
         "losers-container"
       );
 
-
-    const grandFinalsContainer =
+    const finals =
       document.getElementById(
         "grand-finals-container"
       );
 
 
-    if (
-      !winnersContainer ||
-      !losersContainer
-    ) {
-      return;
-    }
+    winners.innerHTML = "";
+    losers.innerHTML = "";
+    finals.innerHTML = "";
 
 
-    winnersContainer.innerHTML =
-      "";
-
-    losersContainer.innerHTML =
-      "";
-
-
-    if (grandFinalsContainer) {
-
-      grandFinalsContainer.innerHTML =
-        "";
-
-    }
-
-
-    if (
-      !enrichedSets ||
-      enrichedSets.length === 0
-    ) {
-
-      winnersContainer.innerHTML = `
-        <div class="empty-msg">
-          No hay partidas generadas aún.
-        </div>
-      `;
-
-
-      losersContainer.innerHTML = `
-        <div class="empty-msg">
-          No hay partidas en Losers.
-        </div>
-      `;
-
-
-      if (grandFinalsContainer) {
-
-        grandFinalsContainer.innerHTML = `
-          <div class="empty-msg">
-            No hay Grand Finals todavía.
-          </div>
-        `;
-
-      }
-
-
-      return;
-
-    }
-
-
-    const winnersSets =
-      enrichedSets.filter(
-        (set) =>
+    renderSetsList(
+      enriched.filter(
+        set =>
           set.bracket_type ===
           "winners"
-      );
+      ),
+      winners
+    );
 
 
-    const losersSets =
-      enrichedSets.filter(
-        (set) =>
+    renderSetsList(
+      enriched.filter(
+        set =>
           set.bracket_type ===
           "losers"
-      );
+      ),
+      losers
+    );
 
 
-    const finalsSets =
-      enrichedSets.filter(
-        (set) =>
+    renderSetsList(
+      enriched.filter(
+        set =>
           set.bracket_type ===
           "grand_finals"
-      );
-
-
-    renderSetsList(
-      winnersSets,
-      winnersContainer
+      ),
+      finals
     );
 
 
-    renderSetsList(
-      losersSets,
-      losersContainer
-    );
-
-
-    if (grandFinalsContainer) {
-
-      renderSetsList(
-        finalsSets,
-        grandFinalsContainer
-      );
-
-    }
-
-
-  } catch (err) {
+  } catch (error) {
 
     console.error(
-      "Error al cargar brackets:",
-      err
+      "Error cargando brackets:",
+      error
     );
-
   }
-
 }
 
 
-/* =========================================================
-   RENDERIZAR SETS
-   ========================================================= */
+/* ==========================================
+   RENDER SETS
+========================================== */
 
 function renderSetsList(
   sets,
@@ -1084,29 +2162,50 @@ function renderSetsList(
     sets.length === 0
   ) {
 
-    container.innerHTML = `
-      <div class="empty-msg">
+    container.innerHTML =
+      `<div class="empty-msg">
         Sin enfrentamientos en esta sección.
-      </div>
-    `;
+      </div>`;
 
     return;
-
   }
 
 
-  container.innerHTML =
-    "";
-
-
   sets.forEach(
-    (set) => {
+    set => {
+
+      const card =
+        document.createElement(
+          "article"
+        );
+
+      const completed =
+        set.status ===
+        "completed";
+
+      const inProgress =
+        set.status ===
+        "in_progress";
+
+      const locked =
+        set.status ===
+        "locked";
+
+
+      card.className =
+        "set-card" +
+        (completed
+          ? " completed"
+          : "") +
+        (set.is_reset
+          ? " reset-match"
+          : "");
+
 
       const p1Name =
         set.player1
           ? set.player1.gamertag
           : "TBD";
-
 
       const p2Name =
         set.player2
@@ -1114,107 +2213,153 @@ function renderSetsList(
           : "TBD";
 
 
-      const isCompleted =
-        set.status ===
-        "completed";
+      const statusClass =
+        completed
+          ? "status-completed"
+          : inProgress
+          ? "status-progress"
+          : "status-pending";
 
 
-      const winnerTag =
-        set.winner
-          ? set.winner.gamertag
-          : "";
+      const statusText =
+        completed
+          ? "FINALIZADO"
+          : inProgress
+          ? "EN CURSO"
+          : locked
+          ? "BLOQUEADO"
+          : "PENDIENTE";
 
 
-      const p1IsWinner =
-        set.winner_id ===
-        set.player1_id;
+      const target =
+        set.best_of === 5
+          ? 3
+          : 2;
 
 
-      const p2IsWinner =
-        set.winner_id ===
-        set.player2_id;
-
-
-      const card =
-        document.createElement(
-          "div"
-        );
-
-
-      card.className =
-        `set-card ${
-          isCompleted
-            ? "completed"
-            : ""
-        }`;
+      const editable =
+        !completed &&
+        !locked &&
+        set.player1 &&
+        set.player2;
 
 
       card.innerHTML = `
 
-        <div class="set-header">
+        <div class="set-top">
 
           <span class="set-round">
-            Ronda ${set.round_number}
+            ${
+              set.is_reset
+                ? "🔥 GRAND FINALS RESET"
+                : `RONDA ${set.bracket_round}`
+            }
           </span>
 
-          <span class="set-badge ${
-            isCompleted
-              ? "completed"
-              : "pending"
-          }">
-
-            ${
-              isCompleted
-                ? "Finalizado"
-                : "Pendiente"
-            }
-
+          <span class="set-status ${statusClass}">
+            ${statusText}
           </span>
 
         </div>
 
 
-        <div class="set-match">
+        <div class="players-row">
 
-          <div class="player-row">
+          <div class="player ${
+            set.winner_id ===
+            set.player1_id
+              ? "winner"
+              : ""
+          }">
 
-            <span class="player-name ${
-              p1IsWinner
-                ? "winner-text"
-                : ""
-            }">
-
+            <span class="player-name">
               ${escapeHTML(p1Name)}
-
             </span>
 
-            <span class="player-score">
-              ${Number(set.p1_score) || 0}
-            </span>
+            ${
+              editable
+                ? `
+                <div class="score-controls">
+
+                  <button
+                    class="score-btn"
+                    onclick="changeScore('${set.id}', 1, -1)"
+                  >
+                    −
+                  </button>
+
+                  <input
+                    id="score-p1-${set.id}"
+                    class="score-input"
+                    type="number"
+                    min="0"
+                    max="${target}"
+                    value="${set.p1_score || 0}"
+                  >
+
+                  <button
+                    class="score-btn"
+                    onclick="changeScore('${set.id}', 1, 1)"
+                  >
+                    +
+                  </button>
+
+                </div>
+              `
+                : ""
+            }
 
           </div>
 
 
-          <div class="vs-divider">
+          <div class="vs">
             VS
           </div>
 
 
-          <div class="player-row">
+          <div class="player ${
+            set.winner_id ===
+            set.player2_id
+              ? "winner"
+              : ""
+          }">
 
-            <span class="player-name ${
-              p2IsWinner
-                ? "winner-text"
-                : ""
-            }">
-
+            <span class="player-name">
               ${escapeHTML(p2Name)}
-
             </span>
 
-            <span class="player-score">
-              ${Number(set.p2_score) || 0}
-            </span>
+            ${
+              editable
+                ? `
+                <div class="score-controls">
+
+                  <button
+                    class="score-btn"
+                    onclick="changeScore('${set.id}', 2, -1)"
+                  >
+                    −
+                  </button>
+
+                  <input
+                    id="score-p2-${set.id}"
+                    class="score-input"
+                    type="number"
+                    min="0"
+                    max="${target}"
+                    value="${set.p2_score || 0}"
+                  >
+
+                  <button
+                    class="score-btn"
+                    onclick="changeScore('${set.id}', 2, 1)"
+                  >
+                    +
+                  </button>
+
+                </div>
+              `
+                : ""
+            }
 
           </div>
 
@@ -1222,422 +2367,222 @@ function renderSetsList(
 
 
         ${
-          isCompleted
+          completed
             ? `
-              <div class="winner-announcement">
+              <div class="completed-result">
+
                 🏆 Ganador:
-                ${escapeHTML(winnerTag)}
+                ${escapeHTML(
+                  set.winner?.gamertag ||
+                  "Desconocido"
+                )}
+
+                <br>
+
+                Marcador:
+                ${set.p1_score} -
+                ${set.p2_score}
+
               </div>
             `
-            : `
-              <div class="set-controls">
+            : editable
+            ? `
 
-                <div class="control-row">
+              <div class="set-options">
 
-                  <input
-                    type="number"
-                    id="score-p1-${set.id}"
-                    class="score-input"
-                    min="0"
-                    value="${Number(set.p1_score) || 0}"
-                    placeholder="P1"
+                <div class="set-option">
+
+                  <label>
+                    FORMATO
+                  </label>
+
+                  <select
+                    id="format-${set.id}"
                   >
 
-                  <input
-                    type="number"
-                    id="score-p2-${set.id}"
-                    class="score-input"
-                    min="0"
-                    value="${Number(set.p2_score) || 0}"
-                    placeholder="P2"
-                  >
+                    <option
+                      value="3"
+                      ${
+                        set.best_of === 3
+                          ? "selected"
+                          : ""
+                      }
+                    >
+                      BO3
+                    </option>
+
+                    <option
+                      value="5"
+                      ${
+                        set.best_of === 5
+                          ? "selected"
+                          : ""
+                      }
+                    >
+                      BO5
+                    </option>
+
+                  </select>
 
                 </div>
 
 
-                <select
-                  id="stage-${set.id}"
-                  class="stage-select"
-                >
+                <div class="set-option">
 
-                  <option value="">
-                    Seleccionar escenario
-                  </option>
+                  <label>
+                    ESCENARIO
+                  </label>
 
-                  <option value="Battlefield">
-                    Battlefield
-                  </option>
-
-                  <option value="Small Battlefield">
-                    Small Battlefield
-                  </option>
-
-                  <option value="Final Destination">
-                    Final Destination
-                  </option>
-
-                  <option value="Pokémon Stadium 2">
-                    Pokémon Stadium 2
-                  </option>
-
-                  <option value="Smashville">
-                    Smashville
-                  </option>
-
-                  <option value="Town and City">
-                    Town and City
-                  </option>
-
-                  <option value="Hollow Bastion">
-                    Hollow Bastion
-                  </option>
-
-                  <option value="Kalos Pokémon League">
-                    Kalos Pokémon League
-                  </option>
-
-                </select>
-
-
-                <div class="control-row">
-
-                  <button
-                    type="button"
-                    id="btn-win-p1-${set.id}"
-                    class="set-button btn-win"
+                  <select
+                    id="stage-${set.id}"
                   >
-                    🏆 Gana ${escapeHTML(p1Name)}
-                  </button>
 
+                    <option value="">
+                      Seleccionar
+                    </option>
 
-                  <button
-                    type="button"
-                    id="btn-win-p2-${set.id}"
-                    class="set-button btn-win"
-                  >
-                    🏆 Gana ${escapeHTML(p2Name)}
-                  </button>
+                    <option value="Battlefield">
+                      Battlefield
+                    </option>
+
+                    <option value="Small Battlefield">
+                      Small Battlefield
+                    </option>
+
+                    <option value="Final Destination">
+                      Final Destination
+                    </option>
+
+                    <option value="Pokemon Stadium 2">
+                      Pokémon Stadium 2
+                    </option>
+
+                    <option value="Smashville">
+                      Smashville
+                    </option>
+
+                    <option value="Town and City">
+                      Town & City
+                    </option>
+
+                    <option value="Hollow Bastion">
+                      Hollow Bastion
+                    </option>
+
+                    <option value="Kalos Pokemon League">
+                      Kalos Pokémon League
+                    </option>
+
+                  </select>
 
                 </div>
 
+              </div>
+
+
+              <div class="set-actions">
 
                 <button
-                  type="button"
-                  id="btn-save-${set.id}"
-                  class="set-button btn-save-score"
+                  class="btn-win"
+                  onclick="declareWinner('${set.id}', 1)"
                 >
-                  💾 Guardar Marcador y Escenario
+                  🏆 GANADOR ${escapeHTML(p1Name)}
                 </button>
 
+                <button
+                  class="btn-win"
+                  onclick="declareWinner('${set.id}', 2)"
+                >
+                  🏆 GANADOR ${escapeHTML(p2Name)}
+                </button>
+
+                <button
+                  class="btn-save"
+                  onclick="saveSet('${set.id}')"
+                >
+                  💾 GUARDAR SET Y AVANZAR
+                </button>
+
+              </div>
+
+            `
+            : `
+              <div class="completed-result">
+                Esperando jugadores...
               </div>
             `
         }
 
       `;
 
-
-      container.appendChild(
-        card
-      );
-
-
-      const btnWin1 =
-        document.getElementById(
-          `btn-win-p1-${set.id}`
-        );
-
-
-      const btnWin2 =
-        document.getElementById(
-          `btn-win-p2-${set.id}`
-        );
-
-
-      const btnSave =
-        document.getElementById(
-          `btn-save-${set.id}`
-        );
-
-
-      if (btnWin1) {
-
-        btnWin1.onclick =
-          () =>
-            saveSetResult(
-              set.id,
-              set.player1_id,
-              set.player1_id,
-              set.player2_id
-            );
-
-      }
-
-
-      if (btnWin2) {
-
-        btnWin2.onclick =
-          () =>
-            saveSetResult(
-              set.id,
-              set.player2_id,
-              set.player1_id,
-              set.player2_id
-            );
-
-      }
-
-
-      if (btnSave) {
-
-        btnSave.onclick =
-          () =>
-            saveSetResult(
-              set.id,
-              null,
-              set.player1_id,
-              set.player2_id
-            );
-
-      }
+      container.appendChild(card);
 
     }
   );
-
 }
 
 
-/* =========================================================
-   GUARDAR RESULTADO
-   ========================================================= */
+/* ==========================================
+   CAMBIAR SCORE
+========================================== */
 
-async function saveSetResult(
-  setId,
-  winnerId,
-  player1Id,
-  player2Id
+function changeScore(
+  matchId,
+  player,
+  amount
 ) {
 
-  try {
-
-    const p1Input =
-      document.getElementById(
-        `score-p1-${setId}`
-      );
-
-
-    const p2Input =
-      document.getElementById(
-        `score-p2-${setId}`
-      );
-
-
-    const stageSelect =
-      document.getElementById(
-        `stage-${setId}`
-      );
-
-
-    const p1Score =
-      p1Input
-        ? parseInt(
-            p1Input.value,
-            10
-          ) || 0
-        : 0;
-
-
-    const p2Score =
-      p2Input
-        ? parseInt(
-            p2Input.value,
-            10
-          ) || 0
-        : 0;
-
-
-    const stageName =
-      stageSelect
-        ? stageSelect.value
-        : "";
-
-
-    if (dashboardMessage) {
-
-      dashboardMessage.textContent =
-        "Guardando resultado...";
-
-    }
-
-
-    let finalStatus =
-      "pending";
-
-
-    let finalWinnerId =
-      winnerId;
-
-
-    if (winnerId) {
-
-      finalStatus =
-        "completed";
-
-    } else {
-
-      if (
-        p1Score > 0 ||
-        p2Score > 0
-      ) {
-
-        if (
-          p1Score > p2Score &&
-          p1Score >= 2
-        ) {
-
-          finalWinnerId =
-            player1Id;
-
-          finalStatus =
-            "completed";
-
-        } else if (
-          p2Score > p1Score &&
-          p2Score >= 2
-        ) {
-
-          finalWinnerId =
-            player2Id;
-
-          finalStatus =
-            "completed";
-
-        }
-
-      }
-
-    }
-
-
-    const updateData = {
-
-      p1_score:
-        p1Score,
-
-      p2_score:
-        p2Score,
-
-      status:
-        finalStatus
-
-    };
-
-
-    if (finalWinnerId) {
-
-      updateData.winner_id =
-        finalWinnerId;
-
-    }
-
-
-    const {
-      error: setErr
-    } =
-      await supabaseClient
-        .from("tournament_sets")
-        .update(updateData)
-        .eq(
-          "id",
-          setId
-        );
-
-
-    if (setErr) {
-
-      throw setErr;
-
-    }
-
-
-    /* GUARDAR ESCENARIO */
-
-    if (stageName) {
-
-      const {
-        error: stageError
-      } =
-        await supabaseClient
-          .from("stage_selections")
-          .insert({
-
-            set_id:
-              setId,
-
-            stage_name:
-              stageName,
-
-            status:
-              "selected",
-
-            action_by:
-              finalWinnerId ||
-              player1Id
-
-          });
-
-
-      if (stageError) {
-
-        console.error(
-          "Error al guardar escenario:",
-          stageError
-        );
-
-      }
-
-    }
-
-
-    if (dashboardMessage) {
-
-      dashboardMessage.textContent =
-        "¡Resultado actualizado!";
-
-    }
-
-
-    await loadBrackets();
-
-
-  } catch (err) {
-
-    console.error(
-      "Error al guardar resultado:",
-      err
+  const input =
+    document.getElementById(
+      player === 1
+        ? `score-p1-${matchId}`
+        : `score-p2-${matchId}`
     );
 
-
-    alert(
-      "No se pudo guardar el resultado: " +
-      err.message
-    );
-
-
-    if (dashboardMessage) {
-
-      dashboardMessage.textContent =
-        "";
-
-    }
-
+  if (!input) {
+    return;
   }
 
+
+  const format =
+    document.getElementById(
+      `format-${matchId}`
+    );
+
+
+  const max =
+    format?.value === "5"
+      ? 3
+      : 2;
+
+
+  let value =
+    parseInt(
+      input.value || 0,
+      10
+    );
+
+
+  value += amount;
+
+
+  value =
+    Math.max(
+      0,
+      Math.min(
+        max,
+        value
+      )
+    );
+
+
+  input.value = value;
 }
 
 
-/* =========================================================
-   ESCAPAR HTML
-   ========================================================= */
+/* ==========================================
+   ESCAPE HTML
+========================================== */
 
 function escapeHTML(value) {
 
@@ -1645,45 +2590,69 @@ function escapeHTML(value) {
     value === null ||
     value === undefined
   ) {
-
     return "";
-
   }
 
-
   return String(value)
-
     .replaceAll(
       "&",
       "&amp;"
     )
-
     .replaceAll(
       "<",
       "&lt;"
     )
-
     .replaceAll(
       ">",
       "&gt;"
     )
-
     .replaceAll(
       '"',
       "&quot;"
     )
-
     .replaceAll(
       "'",
       "&#039;"
     );
-
 }
 
 
-/* =========================================================
-   COMPROBAR SESIÓN
-   ========================================================= */
+/* ==========================================
+   UTILIDADES
+========================================== */
+
+function nextPowerOfTwo(
+  number
+) {
+
+  let value = 1;
+
+  while (
+    value < number
+  ) {
+    value *= 2;
+  }
+
+  return value;
+}
+
+
+function setMessage(
+  message
+) {
+
+  if (
+    dashboardMessage
+  ) {
+    dashboardMessage.textContent =
+      message;
+  }
+}
+
+
+/* ==========================================
+   SESIÓN
+========================================== */
 
 async function checkSession() {
 
@@ -1695,21 +2664,23 @@ async function checkSession() {
   if (!supabaseClient) {
 
     console.error(
-      "Supabase no pudo inicializarse."
+      "Supabase no está disponible."
     );
 
     return;
-
   }
 
 
   const {
     data
   } =
-    await supabaseClient.auth.getSession();
+    await supabaseClient.auth
+      .getSession();
 
 
-  if (data?.session) {
+  if (
+    data?.session
+  ) {
 
     await verifyAdmin(
       data.session.user
@@ -1717,29 +2688,18 @@ async function checkSession() {
 
   } else {
 
-    if (loginSection) {
+    loginSection.style.display =
+      "block";
 
-      loginSection.style.display =
-        "block";
-
-    }
-
-
-    if (dashboard) {
-
-      dashboard.style.display =
-        "none";
-
-    }
-
+    dashboard.style.display =
+      "none";
   }
-
 }
 
 
-/* =========================================================
-   INICIALIZACIÓN
-   ========================================================= */
+/* ==========================================
+   INICIO
+========================================== */
 
 if (
   document.readyState ===
