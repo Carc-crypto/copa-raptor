@@ -231,6 +231,11 @@ hr.divider, .fade-divider {
   transition: all 0.2s ease;
 }
 
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(225, 29, 72, 0.5);
+}
+
 .brackets-wrapper {
   display: flex;
   flex-wrap: wrap;

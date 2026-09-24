@@ -347,4 +347,4 @@ async function resetBrackets() {
     alert("No se pudieron resetear los brackets: " + err.message);
     if (dashboardMessage) dashboardMessage.textContent = "";
   }
-}
+} 
