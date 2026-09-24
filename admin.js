@@ -214,9 +214,9 @@ async function loadBrackets() {
       .from("tournament_sets")
       .select(`
         *,
-        player1:player1_id(id, gamertag),
-        player2:player2_id(id, gamertag),
-        winner:winner_id(id, gamertag)
+        player1:participants!player1_id(id, gamertag),
+        player2:participants!player2_id(id, gamertag),
+        winner:participants!winner_id(id, gamertag)
       `)
       .order("round_number", { ascending: true });
 
