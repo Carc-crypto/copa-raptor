@@ -251,3 +251,100 @@ async function deleteParticipant(id, gamertag) {
     alert("Ocurrió un error inesperado al eliminar.");
   }
 }
+const btnGenerate = document.getElementById("btn-generate-brackets");
+const btnReset = document.getElementById("btn-reset-brackets");
+
+if (btnGenerate) {
+  btnGenerate.addEventListener("click", generateBrackets);
+}
+
+if (btnReset) {
+  btnReset.addEventListener("click", resetBrackets);
+}
+
+async function generateBrackets() {
+  const confirmed = confirm("¿Deseas generar los enfrentamientos con los participantes actuales?");
+  if (!confirmed) return;
+
+  try {
+    if (dashboardMessage) dashboardMessage.textContent = "Generando brackets...";
+
+    // 1. Obtener participantes ordenados
+    const { data: participants, error: pError } = await supabaseClient
+      .from("participants")
+      .select("id, gamertag")
+      .order("created_at", { ascending: true });
+
+    if (pError) throw pError;
+
+    if (!participants || participants.length < 2) {
+      alert("Se necesitan al menos 2 participantes para generar los enfrentamientos.");
+      if (dashboardMessage) dashboardMessage.textContent = "";
+      return;
+    }
+
+    // 2. Limpiar enfrentamientos anteriores si existen
+    await supabaseClient
+      .from("tournament_sets")
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+
+    // 3. Generar parejas para la Ronda 1 de Winners
+    const setsToInsert = [];
+
+    for (let i = 0; i < participants.length; i += 2) {
+      const player1 = participants[i];
+      const player2 = participants[i + 1] || null;
+
+      setsToInsert.push({
+        round_number: 1,
+        bracket_type: "winners",
+        player1_id: player1.id,
+        player2_id: player2 ? player2.id : null,
+        p1_score: 0,
+        p2_score: 0,
+        status: player2 ? "pending" : "completed",
+        winner_id: player2 ? null : player1.id // Paso directo (BYE) si número de participantes es impar
+      });
+    }
+
+    // 4. Guardar en Supabase
+    const { error: insertError } = await supabaseClient
+      .from("tournament_sets")
+      .insert(setsToInsert);
+
+    if (insertError) throw insertError;
+
+    if (dashboardMessage) dashboardMessage.textContent = "¡Brackets generados con éxito!";
+    await loadBrackets();
+
+  } catch (err) {
+    console.error("Error al generar brackets:", err);
+    alert("Error al generar brackets: " + err.message);
+    if (dashboardMessage) dashboardMessage.textContent = "";
+  }
+}
+
+async function resetBrackets() {
+  const confirmed = confirm("¿Estás seguro de que deseas resetear las llaves? Se borrarán todas las partidas actuales.");
+  if (!confirmed) return;
+
+  try {
+    if (dashboardMessage) dashboardMessage.textContent = "Reseteando brackets...";
+
+    const { error } = await supabaseClient
+      .from("tournament_sets")
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+
+    if (error) throw error;
+
+    if (dashboardMessage) dashboardMessage.textContent = "Brackets reseteados correctamente.";
+    await loadBrackets();
+
+  } catch (err) {
+    console.error("Error al resetear brackets:", err);
+    alert("No se pudieron resetear los brackets: " + err.message);
+    if (dashboardMessage) dashboardMessage.textContent = "";
+  }
+}
