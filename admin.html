@@ -1,114 +1,92 @@
-<!DOCTYPE html >
-<html lang="es" >
-<head >
-  <meta charset="UTF-8" >
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" >
-  <title >Panel de Administración - Copa Raptor</title >
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Control - Copa Raptor 2026</title>
+  <link rel="stylesheet" href="admin.css?v=1000" />
+</head>
+<body>
+
   
+  <section id="loginSection">
+    <h2>Copa Raptor 2026 - Acceso Admin</h2>
+    <form id="loginForm">
+      <input type="email" id="adminEmail" placeholder="Correo de Administrador" required />
+      <input type="password" id="adminPassword" placeholder="Contraseña" required />
+      <button type="submit" class="btn-action">Iniciar Sesión</button>
+    </form>
+    <p id="loginMessage"></p>
+  </section>
+
   
-  <link rel="stylesheet" href="admin.css" >
+  <div id="dashboard" style="display: none;">
+
+  
+  <div class="header-box">
+    <header class="dashboard-header">
+      <div class="header-title-group">
+        <img src="copa_raptor_logo.jpeg" alt="Copa Raptor 2026 Logo" class="header-logo" />
+        <div>
+          <h1>Panel de Control</h1>
+          <span class="header-subtitle">Copa Raptor 2026</span>
+        </div>
+      </div>
+      <button id="logoutButton" class="logout">Cerrar Sesión</button>
+    </header>
+  </div>
+
+  
+  <section class="participants-box">
+    <div class="participants-box-header">
+      <h2>Lista de Participantes (<span id="participantCount">0</span>)</h2>
+    </div>
+    <hr class="fade-divider" />
+    <p id="dashboardMessage"></p>
+    <div id="participantsContainer" class="participants-container"></div>
+  </section>
+
+  
+  <hr class="divider" />
+
+  
+  <section class="admin-section">
+    <h2>Gestión de Brackets</h2>
+    <div class="admin-actions">
+      <button id="btn-generate-brackets" class="btn-action">Generar Brackets</button>
+      <button id="btn-reset-brackets" class="btn-danger">Resetear Brackets</button>
+    </div>
+
+    <div class="brackets-wrapper">
+      <div class="bracket-column">
+        <h3>Winners Bracket</h3>
+        <div id="winners-container"></div>
+      </div>
+
+      <div class="bracket-column">
+        <h3>Losers Bracket</h3>
+        <div id="losers-container"></div>
+      </div>
+
+      <div class="bracket-column">
+        <h3>Grand Finals</h3>
+        <div id="grand-finals-container"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+  
+  <div id="stageModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h3>Selección / Ban de Escenario</h3>
+      <p id="stageInstruction"></p>
+      <div id="stagesContainer" class="stages-grid"></div>
+      <button id="btnConfirmStageAction" class="btn-action" style="margin-top: 15px;">Confirmar</button>
+    </div>
+  </div>
 
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  
-  <script src="admin.js" defer></script>
-</head >
-<body style="background-color: #090d16; color: #ffffff; font-family: sans-serif; margin: 0; padding: 20px;" >
-
-  <div style="max-width: 1000px; margin: 0 auto;" >
-    
-    
-    <section id="loginSection" style="max-width: 400px; margin: 50px auto; background: #0f172a; padding: 24px; border-radius: 8px; border: 1px solid #1e293b;" >
-      <h2 style="color: #f5b52e; text-align: center; margin-top: 0;" >ADMINISTRACIÓN</h2 >
-      
-      <form id="loginForm" style="display: flex; flex-direction: column; gap: 12px;" >
-        <div >
-          <label style="display: block; font-size: 12px; margin-bottom: 4px; color: #94a3b8;" >Correo Electrónico:</label >
-          <input type="email" id="adminEmail" required style="width: 100%; padding: 10px; background: #1e293b; border: 1px solid #334155; color: white; border-radius: 4px; box-sizing: border-box;" >
-        </div >
-
-        <div>
-          <label style="display: block; font-size: 12px; margin-bottom: 4px; color: #94a3b8;" >Contraseña:</label >
-          <input type="password" id="adminPassword" required style="width: 100%; padding: 10px; background: #1e293b; border: 1px solid #334155; color: white; border-radius: 4px; box-sizing: border-box;" >
-        </div>
-
-        <button type="submit" style="padding: 10px; background: #f5b52e; color: #0f172a; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; margin-top: 8px;" >
-          Ingresar al Panel
-        </button >
-      </form >
-
-      <p id="loginMessage" style="color: #ef4444; font-size: 13px; text-align: center; margin-top: 12px;" ></p >
-    </section >
-
-    
-    <div id="dashboard" style="display: none;" >
-      
-      
-      <header style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 16px; margin-bottom: 24px;" >
-        <h1 style="color: #f5b52e; margin: 0; font-size: 24px;" >Panel - Copa Raptor</h1 >
-        <button id="logoutButton" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;" >
-          Cerrar Sesión
-        </button >
-      </header >
-
-      
-      <div id="dashboardMessage" style="color: #f5b52e; font-weight: bold; margin-bottom: 16px; text-align: center;" ></div >
-
-      
-      <section style="background: #0f172a; padding: 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #1e293b; display: flex; gap: 12px; align-items: center;" >
-        <button id="btn-generate-brackets" style="padding: 10px 18px; background: #10b981; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;" >
-          ⚡ Generar Brackets
-        </button >
-        <button id="btn-reset-brackets" style="padding: 10px 18px; background: #334155; color: white; border: 1px solid #475569; border-radius: 4px; font-weight: bold; cursor: pointer;" >
-          🔄 Resetear Brackets
-        </button >
-      </section >
-
-      
-      <section style="margin-bottom: 32px;" >
-        <h2 style="color: #f8fafc; border-bottom: 2px solid #f5b52e; padding-bottom: 6px;" >
-          Participantes Registrados (<span id="participantCount" >0</span >)
-        </h2 >
-        <div id="participantsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 16px;" >
-          
-        </div >
-      </section >
-
-      
-      <section >
-        <h2 style="color: #f8fafc; border-bottom: 2px solid #f5b52e; padding-bottom: 6px; margin-bottom: 20px;" >
-          Gestión de Enfrentamientos
-        </h2 >
-
-        
-        <div style="margin-bottom: 24px;" >
-          <h3 style="color: #f5b52e; margin-bottom: 12px;" >WINNERS BRACKET</h3 >
-          <div id="winners-container" >
-            
-          </div >
-        </div >
-
-        
-        <div style="margin-bottom: 24px;" >
-          <h3 style="color: #f5b52e; margin-bottom: 12px;" >LOSERS BRACKET</h3 >
-          <div id="losers-container" >
-            
-          </div >
-        </div >
-
-        
-        <div >
-          <h3 style="color: #f5b52e; margin-bottom: 12px;" >GRAND FINALS</h3 >
-          <div id="grand-finals-container" >
-            
-          </div >
-        </div >
-      </section >
-
-    </div >
-
-  </div >
-
-</body >
-</html >
+  <script src="admin.js?v=1000"></script>
+</body>
+</html>
