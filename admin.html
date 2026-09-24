@@ -20,15 +20,24 @@
 
   
   <div id="dashboard" style="display: none;">
+
   
-  <header class="dashboard-header">
-    <h1>Panel de Control<br />Copa Raptor 2026</h1>
-    <button id="logoutButton" class="logout">Cerrar Sesión</button>
-  </header>
+  <div class="header-box">
+    <header class="dashboard-header">
+      <div class="header-title-group">
+        <img src="logo.jpg" alt="Copa Raptor 2026 Logo" class="header-logo" />
+        <div>
+          <h1>Panel de Control</h1>
+          <span class="header-subtitle">Copa Raptor 2026</span>
+        </div>
+      </div>
+      <button id="logoutButton" class="logout">Cerrar Sesión</button>
+    </header>
+  </div>
 
   
   <section class="participants-box">
-   <div class="participants-box-header">
+    <div class="participants-box-header">
       <h2>Lista de Participantes (<span id="participantCount">0</span>)</h2>
     </div>
     <hr class="fade-divider" />
@@ -37,7 +46,7 @@
   </section>
 
   
-  <hr class="divider"/>
+  <hr class="divider" />
 
   
   <section class="admin-section">
@@ -64,8 +73,8 @@
       </div>
     </div>
   </section>
-</div>
 
+</div>
   
   <div id="stageModal" class="modal" style="display: none;">
     <div class="modal-content">
