@@ -270,16 +270,26 @@ const p1Name = set.player1 ? set.player1.gamertag : "TBD";
 const p2Name = set.player2 ? set.player2.gamertag : "TBD";
 const isCompleted = set.status === "completed";
 const winnerTag = set.winner ? set.winner.gamertag : "Ninguno";const card = document.createElement("div");
-card.className = `set-card ${isCompleted ? 'completed' : ''}`;
+card.style.cssText = `
+  background: #0f172a !important;
+  border: 1px solid #1e293b !important;
+  border-left: 5px solid ${isCompleted ? '#10b981' : '#f5b52e'} !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  margin: 14px 0 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  text-align: left !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+`;
 
 card.innerHTML = `
-Ronda ${set.round_number} ${isCompleted ? 'FINALIZADO' : 'PENDIENTE'}
-${escapeHTML(p1Name)} VS ${escapeHTML(p2Name)}
-Escenario Jugado:
-${isCompleted ? `🏆 Ganador: ${escapeHTML(winnerTag)}` : ''}
-${set.player1_id ? `Gana ${escapeHTML(p1Name)}` : ''}
-${set.player2_id ? `Gana ${escapeHTML(p2Name)}` : ''}
-💾 Guardar Marcador y Escenario`;
+Ronda ${set.round_number}${isCompleted ? 'FINALIZADO' : 'PENDIENTE'}${escapeHTML(p1Name)}VS${escapeHTML(p2Name)}Escenario Jugado:${isCompleted ? `🏆 Ganador: ${escapeHTML(winnerTag)}` : ''}${set.player1_id ? `Gana ${escapeHTML(p1Name)}` : ''}
+${set.player2_id ? `Gana ${escapeHTML(p2Name)}` : ''}💾 Guardar Marcador y Escenario`;
 
 container.appendChild(card);
 
