@@ -20,46 +20,51 @@
 
   
   <div id="dashboard" style="display: none;">
-    <header class="admin-header">
-      <h1>Panel de Control - Copa Raptor 2026</h1>
-      <button id="logoutButton" class="btn-danger">Cerrar Sesión</button>
-    </header>
+  
+  <header class="dashboard-header">
+    <h1>Panel de Control<br />Copa Raptor 2026</h1>
+    <button id="logoutButton" class="logout">Cerrar Sesión</button>
+  </header>
 
-    
-    <section class="admin-section">
+  
+  <section class="participants-box">
+   <div class="participants-box-header">
       <h2>Lista de Participantes (<span id="participantCount">0</span>)</h2>
-      <p id="dashboardMessage"></p>
-      <div id="participantsContainer" class="participants-grid"></div>
-    </section>
+    </div>
+    <hr class="fade-divider" />
+    <p id="dashboardMessage"></p>
+    <div id="participantsContainer" class="participants-container"></div>
+  </section>
 
-    <hr class="divider" />
+  
+  <hr class="divider"/>
 
-    
-    <section class="admin-section">
-      <h2>Gestión de Brackets</h2>
-      <div class="admin-actions">
-        <button id="btn-generate-brackets" class="btn-action">Generar Brackets</button>
-        <button id="btn-reset-brackets" class="btn-danger">Resetear Brackets</button>
+  
+  <section class="admin-section">
+    <h2>Gestión de Brackets</h2>
+    <div class="admin-actions">
+      <button id="btn-generate-brackets" class="btn-action">Generar Brackets</button>
+      <button id="btn-reset-brackets" class="btn-danger">Resetear Brackets</button>
+    </div>
+
+    <div class="brackets-wrapper">
+      <div class="bracket-column">
+        <h3>Winners Bracket</h3>
+        <div id="winners-container"></div>
       </div>
 
-      <div class="brackets-wrapper">
-        <div class="bracket-column">
-          <h3>Winners Bracket</h3>
-          <div id="winners-container"></div>
-        </div>
-
-        <div class="bracket-column">
-          <h3>Losers Bracket</h3>
-          <div id="losers-container"></div>
-        </div>
-
-        <div class="bracket-column">
-          <h3>Grand Finals</h3>
-          <div id="grand-finals-container"></div>
-        </div>
+      <div class="bracket-column">
+        <h3>Losers Bracket</h3>
+        <div id="losers-container"></div>
       </div>
-    </section>
-  </div>
+
+      <div class="bracket-column">
+        <h3>Grand Finals</h3>
+        <div id="grand-finals-container"></div>
+      </div>
+    </div>
+  </section>
+</div>
 
   
   <div id="stageModal" class="modal" style="display: none;">
