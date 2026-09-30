@@ -407,55 +407,84 @@ async function generateBrackets() {
       "Generando doble eliminación..."
     );
 
-    const { data: participants, error } = await supabaseClient  
-  .from("participants")  
-  .select("id, gamertag")  
-  .order("created_at", { ascending: true });  
-  
-if (error) {  
-  throw error;  
-}  
-  
-if (!participants || participants.length < 4) {  
-  alert("Se necesitan al menos 4 participantes.");  
-  setMessage("");  
-  return;  
-}  
+    const {
+      data: participants,
+      error
+    } =
+      await supabaseClient
+        .from("participants")
+        .select("id, gamertag")
+        .order(
+          "created_at",
+          {
+            ascending: true
+          }
+        );
 
-if (participants.length > 32) {  
-  alert("Esta versión admite hasta 32 participantes.");  
-  setMessage("");  
-  return;  
-}  
+    if (error) {
+      throw error;
+    }
+    if (
+      !participants ||
+      participants.length < 4
+    ) {
 
-const bracketSize = nextPowerOfTwo(participants.length);  
+      alert(
+        "Se necesitan al menos 4 participantes."
+      );
 
-if (bracketSize < 4) {  
-  throw new Error("El bracket mínimo es de 4 participantes.");  
-}
+      setMessage("");
+
+      return;
+    }
+
+    if (participants.length > 32) {
+
+      alert(
+        "Esta versión admite hasta 32 participantes."
+      );
+
+      setMessage("");
+
+      return;
+    }
+
+
+    const bracketSize =
+      nextPowerOfTwo(
+        participants.length
+      );
+
+    if (bracketSize < 4) {
+      throw new Error(
+        "El bracket mínimo es de 4 participantes."
+      );
+    }
 
     const randomizedParticipants = [...participants];
-for (let i = randomizedParticipants.length - 1; i > 0; i--) {
-  const j = Math.floor(Math.random() * (i + 1));
-  [randomizedParticipants[i], randomizedParticipants[j]] = [randomizedParticipants[j], randomizedParticipants[i]];
-}
 
+    for (let i = randomizedParticipants.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [randomizedParticipants[i], randomizedParticipants[j]] = [
+        randomizedParticipants[j],
+        randomizedParticipants[i]
+      ];
+    }
 
-await supabaseClient  
-  .from("tournament_sets")  
-  .delete()  
-  .not("id", "is", null);  
-  
-await supabaseClient  
-  .from("tournament_state")  
-  .delete()  
-  .not("id", "is", null);  
+    await supabaseClient
+      .from("tournament_sets")
+      .delete()
+      .not("id", "is", null);
 
+    await supabaseClient
+      .from("tournament_state")
+      .delete()
+      .not("id", "is", null);
 
-const plan = buildDoubleEliminationPlan(  
-  randomizedParticipants,  
-  bracketSize  
-);
+    const plan = buildDoubleEliminationPlan(
+      randomizedParticipants,
+      bracketSize
+    );
 
     const {
       error: insertError
