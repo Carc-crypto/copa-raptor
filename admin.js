@@ -424,7 +424,6 @@ async function generateBrackets() {
     if (error) {
       throw error;
     }
-
     if (
       !participants ||
       participants.length < 4
@@ -467,6 +466,8 @@ async function generateBrackets() {
       );
     }
 
+    const randomizedParticipants = shuffleArray(participants);
+
 
     await supabaseClient
       .from("tournament_sets")
@@ -482,7 +483,7 @@ async function generateBrackets() {
 
     const plan =
       buildDoubleEliminationPlan(
-        participants,
+        randomizedParticipants,
         bracketSize
       );
 

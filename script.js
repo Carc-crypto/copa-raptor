@@ -62,13 +62,7 @@ async function searchPlayerMatches() {
       .maybeSingle();
 
     if (partErr) throw partErr;
-    const randomizedParticipants = shuffleArray(participants);
 
-
-const plan = buildDoubleEliminationPlan(
-  randomizedParticipants, 
-  bracketSize
-);
     if (!participant) {
       container.innerHTML = `<p>No se encontró ningún participante con el Gamertag "${searchInput}".</p>`;
       return;
