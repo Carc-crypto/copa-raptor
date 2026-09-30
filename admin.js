@@ -1634,45 +1634,100 @@ async function declareWinner(
    AVANCE WINNER / LOSER
 ========================================== */
 
-async function advanceWinnerAndLoser(matchInput, winnerId, loserId) {
-  try {
-    let match = matchInput;
+async function advanceWinnerAndLoser(
+  matchId,
+  winnerId,
+  loserId
+) {
 
-    if (typeof matchInput === "string" || typeof matchInput === "number") {
-      const { data, error } = await supabaseClient
-        .from("tournament_sets")
-        .select("*")
-        .eq("id", matchInput)
-        .single();
+  const {
+    data: match,
+    error
+  } =
+    await supabaseClient
+      .from("tournament_sets")
+      .select("*")
+      .eq(
+        "id",
+        matchId
+      )
+      .single();
 
-      if (error || !data) {
-        console.error("No se pudo obtener la partida para avanzar:", error);
-        return;
-      }
-      match = data;
-    }
+  if (error) {
+    throw error;
+  }
 
-    if (!match) return;
 
-    // 1. Avanzar al Ganador
-    if (match.next_match_winner_id && winnerId) {
-      await putPlayerInMatch(
-        match.next_match_winner_id,
-        winnerId,
-        match.next_match_winner_slot
-      );
-    }
+  await supabaseClient
+    .from("tournament_sets")
+    .update({
+      winner_id:
+        winnerId || null,
 
-    // 2. Enviar al Perdedor a Losers Bracket (solo si el set viene de Winners)
-    if (match.bracket_type === "winners" && match.next_match_loser_id && loserId) {
-      await putPlayerInMatch(
-        match.next_match_loser_id,
-        loserId,
-        match.next_match_loser_slot || 1
-      );
-    }
-  } catch (err) {
-    console.error("Error en advanceWinnerAndLoser:", err);
+      loser_id:
+        loserId || null,
+
+      status:
+        "completed"
+    })
+    .eq(
+      "id",
+      matchId
+    );
+
+
+  /*
+    WINNER
+  */
+
+  if (
+    winnerId &&
+    match.next_match_winner_id
+  ) {
+
+    await putPlayerInMatch(
+      match.next_match_winner_id,
+      match.next_match_winner_slot,
+      winnerId
+    );
+
+  }
+
+
+  /*
+    LOSER
+  */
+
+  if (
+    loserId &&
+    match.next_match_loser_id
+  ) {
+
+    await putPlayerInMatch(
+      match.next_match_loser_id,
+      match.next_match_loser_slot,
+      loserId
+    );
+
+  }
+
+
+  /*
+    Si perdió en Losers,
+    queda eliminado.
+  */
+
+  if (
+    loserId &&
+    match.bracket_type ===
+    "losers" &&
+    !match.next_match_loser_id
+  ) {
+
+    console.log(
+      "Jugador eliminado:",
+      loserId
+    );
   }
 }
 
@@ -1681,107 +1736,78 @@ async function advanceWinnerAndLoser(matchInput, winnerId, loserId) {
    COLOCAR JUGADOR EN SIGUIENTE SET
 ========================================== */
 
-async function putPlayerInMatch(targetMatchId, playerId, preferredSlot = null) {
-  if (!targetMatchId || !playerId) return;
+async function putPlayerInMatch(
+  matchId,
+  slot,
+  playerId
+) {
 
-  const { data: match, error } = await supabaseClient
-    .from("tournament_sets")
-    .select("id, player1_id, player2_id, status")
-    .eq("id", targetMatchId)
-    .single();
-
-  if (error || !match) {
-    console.warn(`No se encontró el set destino ID: ${targetMatchId}`);
+  if (!matchId || !playerId) {
     return;
   }
 
-  const pid = String(playerId);
-  const p1 = match.player1_id ? String(match.player1_id) : null;
-  const p2 = match.player2_id ? String(match.player2_id) : null;
 
-  // Si el jugador ya está en la partida, omitir
-  if (p1 === pid || p2 === pid) return;
+  const {
+    data: destination,
+    error
+  } =
+    await supabaseClient
+      .from("tournament_sets")
+      .select(
+        "player1_id,player2_id,status"
+      )
+      .eq(
+        "id",
+        matchId
+      )
+      .single();
 
-  let updatePayload = {};
-
-  if (preferredSlot === 1) {
-    if (!p1) updatePayload.player1_id = pid;
-    else if (!p2) updatePayload.player2_id = pid;
-    else updatePayload.player1_id = pid;
-  } else if (preferredSlot === 2) {
-    if (!p2) updatePayload.player2_id = pid;
-    else if (!p1) updatePayload.player1_id = pid;
-    else updatePayload.player2_id = pid;
-  } else {
-    if (!p1) updatePayload.player1_id = pid;
-    else updatePayload.player2_id = pid;
+  if (error) {
+    throw error;
   }
 
-  const finalP1 = updatePayload.player1_id || p1;
-  const finalP2 = updatePayload.player2_id || p2;
 
-  if (finalP1 && finalP2 && match.status === "waiting") {
-    updatePayload.status = "pending";
+  const field =
+    slot === 1
+      ? "player1_id"
+      : "player2_id";
+
+
+  /*
+    No sobrescribir un jugador
+    que ya llegó correctamente.
+  */
+
+  if (
+    destination[field] &&
+    String(
+      destination[field]
+    ) !== String(playerId)
+  ) {
+
+    throw new Error(
+      "Error de bracket: el espacio ya está ocupado."
+    );
   }
 
-  const { error: updateErr } = await supabaseClient
+
+  await supabaseClient
     .from("tournament_sets")
-    .update(updatePayload)
-    .eq("id", targetMatchId);
+    .update({
+      [field]:
+        String(playerId),
 
-  if (updateErr) {
-    console.error(`Error al actualizar el set ${targetMatchId}:`, updateErr.message);
-  }
+      status:
+        destination.status ===
+        "locked"
+          ? "pending"
+          : destination.status
+    })
+    .eq(
+      "id",
+      matchId
+    );
 }
-  let updatePayload = {};
-
-  // 3. Determinar la casilla según el slot preferido (1 o 2) o la primera libre
-  if (preferredSlot === 1) {
-    if (!p1) {
-      updatePayload.player1_id = pid;
-    } else if (!p2) {
-      updatePayload.player2_id = pid;
-    } else {
-      // Si ambos están ocupados (ej. re-guardado), sobrescribir el slot 1
-      updatePayload.player1_id = pid;
-    }
-  } else if (preferredSlot === 2) {
-    if (!p2) {
-      updatePayload.player2_id = pid;
-    } else if (!p1) {
-      updatePayload.player1_id = pid;
-    } else {
-      // Si ambos están ocupados (ej. re-guardado), sobrescribir el slot 2
-      updatePayload.player2_id = pid;
-    }
-  } else {
-    // Si no se especificó preferencia de slot, colocar en la primera vacía
-    if (!p1) {
-      updatePayload.player1_id = pid;
-    } else if (!p2) {
-      updatePayload.player2_id = pid;
-    } else {
-      updatePayload.player1_id = pid;
-    }
-  }
-
-  // 4. Si el set estaba en "waiting" y ahora se llenan los slots, cambiar a "pending"
-  const newP1 = updatePayload.player1_id || p1;
-  const newP2 = updatePayload.player2_id || p2;
-
-  if (newP1 && newP2 && match.status === "waiting") {
-    updatePayload.status = "pending";
-  }
-
-  // 5. Guardar en Supabase sin lanzar excepciones destructivas
-  const { error: updateErr } = await supabaseClient
-    .from("tournament_sets")
-    .update(updatePayload)
-    .eq("id", targetMatchId);
-
-  if (updateErr) {
-    console.error(`Error actualizando set destino ${targetMatchId}:`, updateErr.message);
-  }
 
 
 /* ==========================================
@@ -2701,288 +2727,4 @@ if (
 
   checkSession();
 
-}
-/* ==========================================
-   CONSTRUIR BRACKET (DOBLE ELIMINACIÓN)
-========================================== */
-
-function getPreviousPowerOfTwo(n) {
-  let p = 1;
-  while (p * 2 <= n) {
-    p *= 2;
-  }
-  return p;
-}
-
-function buildDoubleEliminationPlan(participants) {
-  const n = participants.length;
-  if (n < 2) throw new Error("Se necesitan al menos 2 participantes.");
-
-  let size = 2;
-  while (size < n) size *= 2;
-
-  const matches = [];
-  const winnersRounds = [];
-  const losersRounds = [];
-  const winnersRoundCount = Math.log2(size);
-  let displayNumber = 1;
-
-  const seedOrder = generateSeedOrder(size);
-
-  /* WINNERS BRACKET */
-  for (let round = 1; round <= winnersRoundCount; round++) {
-    const count = size / Math.pow(2, round);
-    const currentRound = [];
-
-    for (let i = 0; i < count; i++) {
-      const match = {
-        id: crypto.randomUUID(),
-        bracket_type: "winners",
-        bracket_round: round,
-        round_number: round,
-        match_number: displayNumber++,
-        player1_id: null,
-        player2_id: null,
-        p1_score: 0,
-        p2_score: 0,
-        best_of: round === winnersRoundCount ? 5 : 3,
-        status: "pending",
-        winner_id: null,
-        loser_id: null,
-        next_match_winner_id: null,
-        next_match_winner_slot: null,
-        next_match_loser_id: null,
-        next_match_loser_slot: null,
-        stage_name: round === winnersRoundCount ? "Winners Final" : `Winners Ronda ${round}`,
-        is_reset: false
-      };
-
-      if (round === 1) {
-        const seed1 = seedOrder[i * 2];
-        const seed2 = seedOrder[i * 2 + 1];
-
-        match.player1_id = participants[seed1 - 1]?.id ? String(participants[seed1 - 1].id) : null;
-        match.player2_id = participants[seed2 - 1]?.id ? String(participants[seed2 - 1].id) : null;
-      }
-
-      currentRound.push(match);
-      matches.push(match);
-    }
-    winnersRounds.push(currentRound);
-  }
-
-  /* LOSERS BRACKET */
-  const loserRoundCount = winnersRoundCount * 2 - 2;
-
-  for (let round = 1; round <= loserRoundCount; round++) {
-    const count = size / Math.pow(2, Math.ceil(round / 2) + 1);
-    const currentRound = [];
-
-    for (let i = 0; i < count; i++) {
-      const match = {
-        id: crypto.randomUUID(),
-        bracket_type: "losers",
-        bracket_round: round,
-        round_number: round,
-        match_number: displayNumber++,
-        player1_id: null,
-        player2_id: null,
-        p1_score: 0,
-        p2_score: 0,
-        best_of: round === loserRoundCount ? 5 : 3,
-        status: "pending",
-        winner_id: null,
-        loser_id: null,
-        next_match_winner_id: null,
-        next_match_winner_slot: null,
-        next_match_loser_id: null,
-        next_match_loser_slot: null,
-        stage_name: round === loserRoundCount ? "Losers Final" : `Losers Ronda ${round}`,
-        is_reset: false
-      };
-
-      currentRound.push(match);
-      matches.push(match);
-    }
-    losersRounds.push(currentRound);
-  }
-
-  /* ENLACES: WINNERS -> WINNERS Y WINNERS -> LOSERS */
-  for (let round = 0; round < winnersRoundCount; round++) {
-    const current = winnersRounds[round];
-    const next = winnersRounds[round + 1];
-
-    current.forEach((match, index) => {
-      if (next) {
-        const destination = next[Math.floor(index / 2)];
-        match.next_match_winner_id = destination.id;
-        match.next_match_winner_slot = (index % 2 === 0) ? 1 : 2;
-      }
-
-      if (round === 0) {
-        const loserRound = losersRounds[0];
-        if (loserRound) {
-          const destination = loserRound[Math.floor(index / 2)];
-          match.next_match_loser_id = destination.id;
-          match.next_match_loser_slot = (index % 2 === 0) ? 1 : 2;
-        }
-      } else {
-        const loserRoundIndex = round * 2 - 1;
-        const loserRound = losersRounds[loserRoundIndex];
-        if (loserRound) {
-          const destIndex = loserRound.length - 1 - Math.floor(index / (current.length / loserRound.length));
-          const destination = loserRound[Math.max(0, Math.min(destIndex, loserRound.length - 1))];
-          match.next_match_loser_id = destination.id;
-          match.next_match_loser_slot = 1;
-        }
-      }
-    });
-  }
-
-  /* ENLACES INTERNOS DE LOSERS */
-  for (let r = 0; r < losersRounds.length; r++) {
-    const current = losersRounds[r];
-    const next = losersRounds[r + 1];
-
-    current.forEach((match, index) => {
-      if (!next) return;
-      if ((r + 1) % 2 === 1) {
-        const destination = next[index];
-        if (destination) {
-          match.next_match_winner_id = destination.id;
-          match.next_match_winner_slot = 2;
-        }
-      } else {
-        const destination = next[Math.floor(index / 2)];
-        if (destination) {
-          match.next_match_winner_id = destination.id;
-          match.next_match_winner_slot = (index % 2 === 0) ? 1 : 2;
-        }
-      }
-    });
-  }
-
-  /* GRAND FINALS */
-  const winnersFinal = winnersRounds[winnersRounds.length - 1][0];
-  const losersFinal = losersRounds[losersRounds.length - 1][0];
-
-  const grandFinal1 = {
-    id: crypto.randomUUID(),
-    bracket_type: "grand_finals",
-    bracket_round: 1,
-    round_number: 1,
-    match_number: displayNumber++,
-    player1_id: null,
-    player2_id: null,
-    p1_score: 0,
-    p2_score: 0,
-    best_of: 5,
-    status: "pending",
-    winner_id: null,
-    loser_id: null,
-    next_match_winner_id: null,
-    next_match_winner_slot: null,
-    next_match_loser_id: null,
-    next_match_loser_slot: null,
-    stage_name: "Grand Finals",
-    is_reset: false
-  };
-
-  const grandFinal2 = {
-    id: crypto.randomUUID(),
-    bracket_type: "grand_finals",
-    bracket_round: 2,
-    round_number: 2,
-    match_number: displayNumber++,
-    player1_id: null,
-    player2_id: null,
-    p1_score: 0,
-    p2_score: 0,
-    best_of: 5,
-    status: "locked",
-    winner_id: null,
-    loser_id: null,
-    next_match_winner_id: null,
-    next_match_winner_slot: null,
-    next_match_loser_id: null,
-    next_match_loser_slot: null,
-    stage_name: "Grand Finals (Reset)",
-    is_reset: true
-  };
-
-  winnersFinal.next_match_winner_id = grandFinal1.id;
-  winnersFinal.next_match_winner_slot = 1;
-
-  winnersFinal.next_match_loser_id = losersFinal.id;
-  winnersFinal.next_match_loser_slot = 1;
-
-  losersFinal.next_match_winner_id = grandFinal1.id;
-  losersFinal.next_match_winner_slot = 2;
-
-  grandFinal1.next_match_winner_id = grandFinal2.id;
-  grandFinal1.next_match_winner_slot = 1;
-
-  matches.push(grandFinal1, grandFinal2);
-
-  return { matches };
-}
-
-/* ==========================================
-   ORDEN DE SEEDS
-========================================== */
-
-function generateSeedOrder(size) {
-  let order = [1];
-  for (let current = 2; current <= size; current *= 2) {
-    const next = [];
-    const max = current;
-    order.forEach(seed => {
-      next.push(seed);
-      next.push(max + 1 - seed);
-    });
-    order = next;
-  }
-  return order;
-}
-
-/* ==========================================
-   RESOLUCIÓN DE BYES
-========================================== */
-
-async function resolveInitialByes() {
-  const { data, error } = await supabaseClient
-    .from("tournament_sets")
-    .select("*")
-    .eq("bracket_type", "winners")
-    .eq("bracket_round", 1);
-
-  if (error) throw error;
-
-  for (const match of data || []) {
-    if (match.player1_id && !match.player2_id) {
-      await completeBye(match, match.player1_id);
-    } else if (!match.player1_id && match.player2_id) {
-      await completeBye(match, match.player2_id);
-    }
-  }
-}
-
-async function completeBye(match, playerId) {
-  // 1. Marcar la partida actual como ganada por BYE
-  await supabaseClient
-    .from("tournament_sets")
-    .update({
-      winner_id: playerId,
-      status: "completed"
-    })
-    .eq("id", match.id);
-
-  // 2. Avanzar al ganador a la siguiente ronda si tiene un set asignado
-  if (match.next_match_winner_id) {
-    const slotField = match.next_match_winner_slot === 1 ? "player1_id" : "player2_id";
-    await supabaseClient
-      .from("tournament_sets")
-      .update({ [slotField]: playerId })
-      .eq("id", match.next_match_winner_id);
-  }
 }
