@@ -449,12 +449,6 @@ async function generateBrackets() {
       return;
     }
 
-
-    /*
-      Para mantener el formato estándar de Smash,
-      el bracket se redondea a 4, 8, 16 o 32.
-    */
-
     const bracketSize =
       nextPowerOfTwo(
         participants.length
@@ -466,27 +460,28 @@ async function generateBrackets() {
       );
     }
 
-    const randomizedParticipants = shuffleArray(participants);
+    const randomizedParticipants = [...participants];
+for (let i = randomizedParticipants.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1));
+  [randomizedParticipants[i], randomizedParticipants[j]] = [randomizedParticipants[j], randomizedParticipants[i]];
+}
 
 
-    await supabaseClient
-      .from("tournament_sets")
-      .delete()
-      .not("id", "is", null);
+await supabaseClient  
+  .from("tournament_sets")  
+  .delete()  
+  .not("id", "is", null);  
+  
+await supabaseClient  
+  .from("tournament_state")  
+  .delete()  
+  .not("id", "is", null);  
 
 
-    await supabaseClient
-      .from("tournament_state")
-      .delete()
-      .not("id", "is", null);
-
-
-    const plan =
-      buildDoubleEliminationPlan(
-        randomizedParticipants,
-        bracketSize
-      );
-
+const plan = buildDoubleEliminationPlan(  
+  randomizedParticipants,  
+  bracketSize  
+);
 
     const {
       error: insertError
