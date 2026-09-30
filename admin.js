@@ -1638,7 +1638,6 @@ async function advanceWinnerAndLoser(matchInput, winnerId, loserId) {
   try {
     let match = matchInput;
 
-    // Si recibimos solo el ID, traemos la información completa de Supabase
     if (typeof matchInput === "string" || typeof matchInput === "number") {
       const { data, error } = await supabaseClient
         .from("tournament_sets")
@@ -1655,7 +1654,7 @@ async function advanceWinnerAndLoser(matchInput, winnerId, loserId) {
 
     if (!match) return;
 
-    // A) Avanzar al Ganador
+    // 1. Avanzar al Ganador
     if (match.next_match_winner_id && winnerId) {
       await putPlayerInMatch(
         match.next_match_winner_id,
@@ -1664,7 +1663,7 @@ async function advanceWinnerAndLoser(matchInput, winnerId, loserId) {
       );
     }
 
-    // B) Transferir al Perdedor a Losers (Solo si viene de Winners)
+    // 2. Enviar al Perdedor a Losers Bracket (solo si el set viene de Winners)
     if (match.bracket_type === "winners" && match.next_match_loser_id && loserId) {
       await putPlayerInMatch(
         match.next_match_loser_id,
@@ -1685,7 +1684,6 @@ async function advanceWinnerAndLoser(matchInput, winnerId, loserId) {
 async function putPlayerInMatch(targetMatchId, playerId, preferredSlot = null) {
   if (!targetMatchId || !playerId) return;
 
-  // Consultar el estado actual del set destino
   const { data: match, error } = await supabaseClient
     .from("tournament_sets")
     .select("id, player1_id, player2_id, status")
@@ -1701,16 +1699,15 @@ async function putPlayerInMatch(targetMatchId, playerId, preferredSlot = null) {
   const p1 = match.player1_id ? String(match.player1_id) : null;
   const p2 = match.player2_id ? String(match.player2_id) : null;
 
-  // Si el jugador ya está en la partida, no hace nada (idempotente)
+  // Si el jugador ya está en la partida, omitir
   if (p1 === pid || p2 === pid) return;
 
   let updatePayload = {};
 
-  // Asignar slot de manera inteligente sin lanzar excepciones
   if (preferredSlot === 1) {
     if (!p1) updatePayload.player1_id = pid;
     else if (!p2) updatePayload.player2_id = pid;
-    else updatePayload.player1_id = pid; // Sobrescribir en caso de re-guardado
+    else updatePayload.player1_id = pid;
   } else if (preferredSlot === 2) {
     if (!p2) updatePayload.player2_id = pid;
     else if (!p1) updatePayload.player1_id = pid;
@@ -1720,9 +1717,9 @@ async function putPlayerInMatch(targetMatchId, playerId, preferredSlot = null) {
     else updatePayload.player2_id = pid;
   }
 
-  // Activar la partida si ya tiene ambos jugadores
   const finalP1 = updatePayload.player1_id || p1;
   const finalP2 = updatePayload.player2_id || p2;
+
   if (finalP1 && finalP2 && match.status === "waiting") {
     updatePayload.status = "pending";
   }
