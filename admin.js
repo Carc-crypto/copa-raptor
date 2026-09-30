@@ -471,16 +471,29 @@ async function generateBrackets() {
       ];
     }
 
-    await supabaseClient
-      .from("tournament_sets")
-      .delete()
-      .not("id", "is", null);
+    const { error: deleteStateErr } = await supabaseClient
+  .from("tournament_state")
+  .delete()
+  .neq("id", 0);
 
-    await supabaseClient
-      .from("tournament_state")
-      .delete()
-      .not("id", "is", null);
 
+const { error: stateError } = await supabaseClient
+  .from("tournament_state")
+  .insert([{ id: 1, status: "in_progress", champion_id: null }]);
+
+
+if (stateError) {
+  console.warn("Falló el insert de estado, intentando update:", stateError.message);
+  
+  const { error: updateError } = await supabaseClient
+    .from("tournament_state")
+    .update({ status: "in_progress", champion_id: null })
+    .eq("id", 1);
+
+  if (updateError) {
+    console.error("Error crítico en tournament_state:", updateError);
+  }
+}
     const plan = buildDoubleEliminationPlan(
       randomizedParticipants,
       bracketSize
