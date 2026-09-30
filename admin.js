@@ -499,12 +499,12 @@ async function generateBrackets() {
 
 
     await supabaseClient
-      .from("tournament_state")
-      .insert({
-        id: 1,
-        status: "in_progress",
-        champion_id: null
-      });
+  .from("tournament_state")
+  .upsert({
+    id: 1,
+    status: "in_progress",
+    champion_id: null
+  }, { onConflict: "id" });
 
 
     await resolveInitialByes();
