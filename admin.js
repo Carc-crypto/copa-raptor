@@ -1634,100 +1634,46 @@ async function declareWinner(
    AVANCE WINNER / LOSER
 ========================================== */
 
-async function advanceWinnerAndLoser(
-  matchId,
-  winnerId,
-  loserId
-) {
+async function advanceWinnerAndLoser(matchInput, winnerId, loserId) {
+  try {
+    let match = matchInput;
 
-  const {
-    data: match,
-    error
-  } =
-    await supabaseClient
-      .from("tournament_sets")
-      .select("*")
-      .eq(
-        "id",
-        matchId
-      )
-      .single();
+    // Si recibimos solo el ID, traemos la información completa de Supabase
+    if (typeof matchInput === "string" || typeof matchInput === "number") {
+      const { data, error } = await supabaseClient
+        .from("tournament_sets")
+        .select("*")
+        .eq("id", matchInput)
+        .single();
 
-  if (error) {
-    throw error;
-  }
+      if (error || !data) {
+        console.error("No se pudo obtener la partida para avanzar:", error);
+        return;
+      }
+      match = data;
+    }
 
+    if (!match) return;
 
-  await supabaseClient
-    .from("tournament_sets")
-    .update({
-      winner_id:
-        winnerId || null,
+    // A) Avanzar al Ganador
+    if (match.next_match_winner_id && winnerId) {
+      await putPlayerInMatch(
+        match.next_match_winner_id,
+        winnerId,
+        match.next_match_winner_slot
+      );
+    }
 
-      loser_id:
-        loserId || null,
-
-      status:
-        "completed"
-    })
-    .eq(
-      "id",
-      matchId
-    );
-
-
-  /*
-    WINNER
-  */
-
-  if (
-    winnerId &&
-    match.next_match_winner_id
-  ) {
-
-    await putPlayerInMatch(
-      match.next_match_winner_id,
-      match.next_match_winner_slot,
-      winnerId
-    );
-
-  }
-
-
-  /*
-    LOSER
-  */
-
-  if (
-    loserId &&
-    match.next_match_loser_id
-  ) {
-
-    await putPlayerInMatch(
-      match.next_match_loser_id,
-      match.next_match_loser_slot,
-      loserId
-    );
-
-  }
-
-
-  /*
-    Si perdió en Losers,
-    queda eliminado.
-  */
-
-  if (
-    loserId &&
-    match.bracket_type ===
-    "losers" &&
-    !match.next_match_loser_id
-  ) {
-
-    console.log(
-      "Jugador eliminado:",
-      loserId
-    );
+    // B) Transferir al Perdedor a Losers (Solo si viene de Winners)
+    if (match.bracket_type === "winners" && match.next_match_loser_id && loserId) {
+      await putPlayerInMatch(
+        match.next_match_loser_id,
+        loserId,
+        match.next_match_loser_slot || 1
+      );
+    }
+  } catch (err) {
+    console.error("Error en advanceWinnerAndLoser:", err);
   }
 }
 
@@ -1739,7 +1685,7 @@ async function advanceWinnerAndLoser(
 async function putPlayerInMatch(targetMatchId, playerId, preferredSlot = null) {
   if (!targetMatchId || !playerId) return;
 
-  // 1. Obtener el set de destino desde Supabase
+  // Consultar el estado actual del set destino
   const { data: match, error } = await supabaseClient
     .from("tournament_sets")
     .select("id, player1_id, player2_id, status")
@@ -1751,16 +1697,45 @@ async function putPlayerInMatch(targetMatchId, playerId, preferredSlot = null) {
     return;
   }
 
-  // Convertir ID a string para comparaciones seguras
   const pid = String(playerId);
   const p1 = match.player1_id ? String(match.player1_id) : null;
   const p2 = match.player2_id ? String(match.player2_id) : null;
 
-  // 2. Si el jugador ya está asignado en este set, no hacemos nada
-  if (p1 === pid || p2 === pid) {
-    return;
+  // Si el jugador ya está en la partida, no hace nada (idempotente)
+  if (p1 === pid || p2 === pid) return;
+
+  let updatePayload = {};
+
+  // Asignar slot de manera inteligente sin lanzar excepciones
+  if (preferredSlot === 1) {
+    if (!p1) updatePayload.player1_id = pid;
+    else if (!p2) updatePayload.player2_id = pid;
+    else updatePayload.player1_id = pid; // Sobrescribir en caso de re-guardado
+  } else if (preferredSlot === 2) {
+    if (!p2) updatePayload.player2_id = pid;
+    else if (!p1) updatePayload.player1_id = pid;
+    else updatePayload.player2_id = pid;
+  } else {
+    if (!p1) updatePayload.player1_id = pid;
+    else updatePayload.player2_id = pid;
   }
 
+  // Activar la partida si ya tiene ambos jugadores
+  const finalP1 = updatePayload.player1_id || p1;
+  const finalP2 = updatePayload.player2_id || p2;
+  if (finalP1 && finalP2 && match.status === "waiting") {
+    updatePayload.status = "pending";
+  }
+
+  const { error: updateErr } = await supabaseClient
+    .from("tournament_sets")
+    .update(updatePayload)
+    .eq("id", targetMatchId);
+
+  if (updateErr) {
+    console.error(`Error al actualizar el set ${targetMatchId}:`, updateErr.message);
+  }
+}
   let updatePayload = {};
 
   // 3. Determinar la casilla según el slot preferido (1 o 2) o la primera libre
@@ -1810,7 +1785,6 @@ async function putPlayerInMatch(targetMatchId, playerId, preferredSlot = null) {
   if (updateErr) {
     console.error(`Error actualizando set destino ${targetMatchId}:`, updateErr.message);
   }
-}
 
 
 /* ==========================================
@@ -2747,42 +2721,34 @@ function buildDoubleEliminationPlan(participants) {
   const n = participants.length;
   if (n < 2) throw new Error("Se necesitan al menos 2 participantes.");
 
+  let size = 2;
+  while (size < n) size *= 2;
+
   const matches = [];
+  const winnersRounds = [];
+  const losersRounds = [];
+  const winnersRoundCount = Math.log2(size);
   let displayNumber = 1;
 
-  // Determinar la potencia base (2, 4, 8, 16, 32...)
-  const P = getPreviousPowerOfTwo(n);
-  const isExactPowerOfTwo = (n === P);
+  const seedOrder = generateSeedOrder(size);
 
-  const winnersRounds = [];
+  /* WINNERS BRACKET */
+  for (let round = 1; round <= winnersRoundCount; round++) {
+    const count = size / Math.pow(2, round);
+    const currentRound = [];
 
-  if (!isExactPowerOfTwo) {
-    /* ==========================================
-       CASO: NÚMERO IMPAR / NO POTENCIA DE 2
-       (Ejemplo: 5, 6, 7, 9, 10... jugadores)
-    ========================================== */
-    
-    // 1. RONDA 1: Ronda de Clasificación (Solo los enfrentamientos necesarios)
-    const playInMatchesCount = n - P;
-    const playInPlayersCount = playInMatchesCount * 2;
-    const byesCount = n - playInPlayersCount;
-
-    const round1 = [];
-    // Los jugadores que van a clasificación
-    const playInPlayers = participants.slice(byesCount);
-
-    for (let i = 0; i < playInMatchesCount; i++) {
+    for (let i = 0; i < count; i++) {
       const match = {
         id: crypto.randomUUID(),
         bracket_type: "winners",
-        bracket_round: 1,
-        round_number: 1,
+        bracket_round: round,
+        round_number: round,
         match_number: displayNumber++,
-        player1_id: String(playInPlayers[i * 2].id),
-        player2_id: String(playInPlayers[i * 2 + 1].id),
+        player1_id: null,
+        player2_id: null,
         p1_score: 0,
         p2_score: 0,
-        best_of: 3,
+        best_of: round === winnersRoundCount ? 5 : 3,
         status: "pending",
         winner_id: null,
         loser_id: null,
@@ -2790,146 +2756,176 @@ function buildDoubleEliminationPlan(participants) {
         next_match_winner_slot: null,
         next_match_loser_id: null,
         next_match_loser_slot: null,
-        stage_name: "Clasificación Winners"
+        stage_name: round === winnersRoundCount ? "Winners Final" : `Winners Ronda ${round}`,
+        is_reset: false
       };
-      round1.push(match);
+
+      if (round === 1) {
+        const seed1 = seedOrder[i * 2];
+        const seed2 = seedOrder[i * 2 + 1];
+
+        match.player1_id = participants[seed1 - 1]?.id ? String(participants[seed1 - 1].id) : null;
+        match.player2_id = participants[seed2 - 1]?.id ? String(participants[seed2 - 1].id) : null;
+      }
+
+      currentRound.push(match);
       matches.push(match);
     }
-    winnersRounds.push(round1);
-
-    // 2. RONDA 2: Cuadro Principal (Pases Directos + Ganadores de Clasificación)
-    const round2MatchesCount = P / 2;
-    const round2 = [];
-    const byePlayers = participants.slice(0, byesCount);
-
-    for (let i = 0; i < round2MatchesCount; i++) {
-      const match = {
-        id: crypto.randomUUID(),
-        bracket_type: "winners",
-        bracket_round: 2,
-        round_number: 2,
-        match_number: displayNumber++,
-        player1_id: byePlayers[i] ? String(byePlayers[i].id) : null,
-        player2_id: byePlayers[round2MatchesCount + i] ? String(byePlayers[round2MatchesCount + i].id) : null,
-        p1_score: 0,
-        p2_score: 0,
-        best_of: 3,
-        status: "pending",
-        winner_id: null,
-        loser_id: null,
-        next_match_winner_id: null,
-        next_match_winner_slot: null,
-        next_match_loser_id: null,
-        next_match_loser_slot: null,
-        stage_name: "Winners Ronda Principal"
-      };
-      round2.push(match);
-      matches.push(match);
-    }
-
-    // Conectar los ganadores de la Clasificación a la Ronda 2
-    round1.forEach((playInMatch, idx) => {
-      const targetMatch = round2[idx % round2MatchesCount];
-      playInMatch.next_match_winner_id = targetMatch.id;
-      playInMatch.next_match_winner_slot = targetMatch.player1_id === null ? 1 : 2;
-    });
-
-    winnersRounds.push(round2);
-
-    // Generar rondas subsecuentes de Winners
-    let currentCount = round2MatchesCount / 2;
-    let r = 3;
-    while (currentCount >= 1) {
-      const roundMatches = [];
-      for (let i = 0; i < currentCount; i++) {
-        const match = {
-          id: crypto.randomUUID(),
-          bracket_type: "winners",
-          bracket_round: r,
-          round_number: r,
-          match_number: displayNumber++,
-          player1_id: null,
-          player2_id: null,
-          p1_score: 0,
-          p2_score: 0,
-          best_of: currentCount === 1 ? 5 : 3,
-          status: "pending",
-          winner_id: null,
-          loser_id: null,
-          next_match_winner_id: null,
-          next_match_winner_slot: null,
-          next_match_loser_id: null,
-          next_match_loser_slot: null
-        };
-        roundMatches.push(match);
-        matches.push(match);
-      }
-      winnersRounds.push(roundMatches);
-
-      // Conectar ronda anterior a la actual
-      const prevRound = winnersRounds[winnersRounds.length - 2];
-      prevRound.forEach((m, idx) => {
-        const dest = roundMatches[Math.floor(idx / 2)];
-        m.next_match_winner_id = dest.id;
-        m.next_match_winner_slot = (idx % 2 === 0) ? 1 : 2;
-      });
-
-      currentCount /= 2;
-      r++;
-    }
-
-  } else {
-    /* ==========================================
-       CASO: POTENCIA EXACTA (4, 8, 16, 32...)
-    ========================================== */
-    const totalRounds = Math.log2(n);
-    for (let round = 1; round <= totalRounds; round++) {
-      const count = n / Math.pow(2, round);
-      const currentRound = [];
-
-      for (let i = 0; i < count; i++) {
-        const match = {
-          id: crypto.randomUUID(),
-          bracket_type: "winners",
-          bracket_round: round,
-          round_number: round,
-          match_number: displayNumber++,
-          player1_id: null,
-          player2_id: null,
-          p1_score: 0,
-          p2_score: 0,
-          best_of: round === totalRounds ? 5 : 3,
-          status: "pending",
-          winner_id: null,
-          loser_id: null,
-          next_match_winner_id: null,
-          next_match_winner_slot: null,
-          next_match_loser_id: null,
-          next_match_loser_slot: null
-        };
-
-        if (round === 1) {
-          match.player1_id = String(participants[i * 2].id);
-          match.player2_id = String(participants[i * 2 + 1].id);
-        }
-
-        currentRound.push(match);
-        matches.push(match);
-      }
-      winnersRounds.push(currentRound);
-    }
-
-    // Conexiones de Winners
-    for (let round = 0; round < winnersRounds.length - 1; round++) {
-      const current = winnersRounds[round];
-      const next = winnersRounds[round + 1];
-      current.forEach((m, idx) => {
-        const dest = next[Math.floor(idx / 2)];
-        m.next_match_winner_id = dest.id;
-        m.next_match_winner_slot = (idx % 2 === 0) ? 1 : 2;
-      });
-    }
+    winnersRounds.push(currentRound);
   }
+
+  /* LOSERS BRACKET */
+  const loserRoundCount = winnersRoundCount * 2 - 2;
+
+  for (let round = 1; round <= loserRoundCount; round++) {
+    const count = size / Math.pow(2, Math.ceil(round / 2) + 1);
+    const currentRound = [];
+
+    for (let i = 0; i < count; i++) {
+      const match = {
+        id: crypto.randomUUID(),
+        bracket_type: "losers",
+        bracket_round: round,
+        round_number: round,
+        match_number: displayNumber++,
+        player1_id: null,
+        player2_id: null,
+        p1_score: 0,
+        p2_score: 0,
+        best_of: round === loserRoundCount ? 5 : 3,
+        status: "pending",
+        winner_id: null,
+        loser_id: null,
+        next_match_winner_id: null,
+        next_match_winner_slot: null,
+        next_match_loser_id: null,
+        next_match_loser_slot: null,
+        stage_name: round === loserRoundCount ? "Losers Final" : `Losers Ronda ${round}`,
+        is_reset: false
+      };
+
+      currentRound.push(match);
+      matches.push(match);
+    }
+    losersRounds.push(currentRound);
+  }
+
+  /* ENLACES: WINNERS -> WINNERS Y WINNERS -> LOSERS */
+  for (let round = 0; round < winnersRoundCount; round++) {
+    const current = winnersRounds[round];
+    const next = winnersRounds[round + 1];
+
+    current.forEach((match, index) => {
+      if (next) {
+        const destination = next[Math.floor(index / 2)];
+        match.next_match_winner_id = destination.id;
+        match.next_match_winner_slot = (index % 2 === 0) ? 1 : 2;
+      }
+
+      if (round === 0) {
+        const loserRound = losersRounds[0];
+        if (loserRound) {
+          const destination = loserRound[Math.floor(index / 2)];
+          match.next_match_loser_id = destination.id;
+          match.next_match_loser_slot = (index % 2 === 0) ? 1 : 2;
+        }
+      } else {
+        const loserRoundIndex = round * 2 - 1;
+        const loserRound = losersRounds[loserRoundIndex];
+        if (loserRound) {
+          const destIndex = loserRound.length - 1 - Math.floor(index / (current.length / loserRound.length));
+          const destination = loserRound[Math.max(0, Math.min(destIndex, loserRound.length - 1))];
+          match.next_match_loser_id = destination.id;
+          match.next_match_loser_slot = 1;
+        }
+      }
+    });
+  }
+
+  /* ENLACES INTERNOS DE LOSERS */
+  for (let r = 0; r < losersRounds.length; r++) {
+    const current = losersRounds[r];
+    const next = losersRounds[r + 1];
+
+    current.forEach((match, index) => {
+      if (!next) return;
+      if ((r + 1) % 2 === 1) {
+        const destination = next[index];
+        if (destination) {
+          match.next_match_winner_id = destination.id;
+          match.next_match_winner_slot = 2;
+        }
+      } else {
+        const destination = next[Math.floor(index / 2)];
+        if (destination) {
+          match.next_match_winner_id = destination.id;
+          match.next_match_winner_slot = (index % 2 === 0) ? 1 : 2;
+        }
+      }
+    });
+  }
+
+  /* GRAND FINALS */
+  const winnersFinal = winnersRounds[winnersRounds.length - 1][0];
+  const losersFinal = losersRounds[losersRounds.length - 1][0];
+
+  const grandFinal1 = {
+    id: crypto.randomUUID(),
+    bracket_type: "grand_finals",
+    bracket_round: 1,
+    round_number: 1,
+    match_number: displayNumber++,
+    player1_id: null,
+    player2_id: null,
+    p1_score: 0,
+    p2_score: 0,
+    best_of: 5,
+    status: "pending",
+    winner_id: null,
+    loser_id: null,
+    next_match_winner_id: null,
+    next_match_winner_slot: null,
+    next_match_loser_id: null,
+    next_match_loser_slot: null,
+    stage_name: "Grand Finals",
+    is_reset: false
+  };
+
+  const grandFinal2 = {
+    id: crypto.randomUUID(),
+    bracket_type: "grand_finals",
+    bracket_round: 2,
+    round_number: 2,
+    match_number: displayNumber++,
+    player1_id: null,
+    player2_id: null,
+    p1_score: 0,
+    p2_score: 0,
+    best_of: 5,
+    status: "locked",
+    winner_id: null,
+    loser_id: null,
+    next_match_winner_id: null,
+    next_match_winner_slot: null,
+    next_match_loser_id: null,
+    next_match_loser_slot: null,
+    stage_name: "Grand Finals (Reset)",
+    is_reset: true
+  };
+
+  winnersFinal.next_match_winner_id = grandFinal1.id;
+  winnersFinal.next_match_winner_slot = 1;
+
+  winnersFinal.next_match_loser_id = losersFinal.id;
+  winnersFinal.next_match_loser_slot = 1;
+
+  losersFinal.next_match_winner_id = grandFinal1.id;
+  losersFinal.next_match_winner_slot = 2;
+
+  grandFinal1.next_match_winner_id = grandFinal2.id;
+  grandFinal1.next_match_winner_slot = 1;
+
+  matches.push(grandFinal1, grandFinal2);
 
   return { matches };
 }
