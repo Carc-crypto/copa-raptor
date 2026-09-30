@@ -1736,77 +1736,80 @@ async function advanceWinnerAndLoser(
    COLOCAR JUGADOR EN SIGUIENTE SET
 ========================================== */
 
-async function putPlayerInMatch(
-  matchId,
-  slot,
-  playerId
-) {
+async function putPlayerInMatch(targetMatchId, playerId, preferredSlot = null) {
+  if (!targetMatchId || !playerId) return;
 
-  if (!matchId || !playerId) {
+  // 1. Obtener el set de destino desde Supabase
+  const { data: match, error } = await supabaseClient
+    .from("tournament_sets")
+    .select("id, player1_id, player2_id, status")
+    .eq("id", targetMatchId)
+    .single();
+
+  if (error || !match) {
+    console.warn(`No se encontró el set destino ID: ${targetMatchId}`);
     return;
   }
 
+  // Convertir ID a string para comparaciones seguras
+  const pid = String(playerId);
+  const p1 = match.player1_id ? String(match.player1_id) : null;
+  const p2 = match.player2_id ? String(match.player2_id) : null;
 
-  const {
-    data: destination,
-    error
-  } =
-    await supabaseClient
-      .from("tournament_sets")
-      .select(
-        "player1_id,player2_id,status"
-      )
-      .eq(
-        "id",
-        matchId
-      )
-      .single();
-
-  if (error) {
-    throw error;
+  // 2. Si el jugador ya está asignado en este set, no hacemos nada
+  if (p1 === pid || p2 === pid) {
+    return;
   }
 
+  let updatePayload = {};
 
-  const field =
-    slot === 1
-      ? "player1_id"
-      : "player2_id";
-
-
-  /*
-    No sobrescribir un jugador
-    que ya llegó correctamente.
-  */
-
-  if (
-    destination[field] &&
-    String(
-      destination[field]
-    ) !== String(playerId)
-  ) {
-
-    throw new Error(
-      "Error de bracket: el espacio ya está ocupado."
-    );
+  // 3. Determinar la casilla según el slot preferido (1 o 2) o la primera libre
+  if (preferredSlot === 1) {
+    if (!p1) {
+      updatePayload.player1_id = pid;
+    } else if (!p2) {
+      updatePayload.player2_id = pid;
+    } else {
+      // Si ambos están ocupados (ej. re-guardado), sobrescribir el slot 1
+      updatePayload.player1_id = pid;
+    }
+  } else if (preferredSlot === 2) {
+    if (!p2) {
+      updatePayload.player2_id = pid;
+    } else if (!p1) {
+      updatePayload.player1_id = pid;
+    } else {
+      // Si ambos están ocupados (ej. re-guardado), sobrescribir el slot 2
+      updatePayload.player2_id = pid;
+    }
+  } else {
+    // Si no se especificó preferencia de slot, colocar en la primera vacía
+    if (!p1) {
+      updatePayload.player1_id = pid;
+    } else if (!p2) {
+      updatePayload.player2_id = pid;
+    } else {
+      updatePayload.player1_id = pid;
+    }
   }
 
+  // 4. Si el set estaba en "waiting" y ahora se llenan los slots, cambiar a "pending"
+  const newP1 = updatePayload.player1_id || p1;
+  const newP2 = updatePayload.player2_id || p2;
 
-  await supabaseClient
+  if (newP1 && newP2 && match.status === "waiting") {
+    updatePayload.status = "pending";
+  }
+
+  // 5. Guardar en Supabase sin lanzar excepciones destructivas
+  const { error: updateErr } = await supabaseClient
     .from("tournament_sets")
-    .update({
-      [field]:
-        String(playerId),
+    .update(updatePayload)
+    .eq("id", targetMatchId);
 
-      status:
-        destination.status ===
-        "locked"
-          ? "pending"
-          : destination.status
-    })
-    .eq(
-      "id",
-      matchId
-    );
+  if (updateErr) {
+    console.error(`Error actualizando set destino ${targetMatchId}:`, updateErr.message);
+  }
 }
 
 
