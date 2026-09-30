@@ -2728,3 +2728,272 @@ if (
   checkSession();
 
 }
+/* ==========================================
+   CONSTRUIR BRACKET (DOBLE ELIMINACIÓN)
+========================================== */
+
+function buildDoubleEliminationPlan(participants, size) {
+  const matches = [];
+  const winnersRounds = [];
+  const losersRounds = [];
+  const winnersRoundCount = Math.log2(size);
+  let displayNumber = 1;
+
+  /* Orden de seeds estándar (1,8,4,5,2,7,3,6...) */
+  const seedOrder = generateSeedOrder(size);
+
+  /* WINNERS BRACKET */
+  for (let round = 1; round <= winnersRoundCount; round++) {
+    const count = size / Math.pow(2, round);
+    const currentRound = [];
+
+    for (let i = 0; i < count; i++) {
+      const id = crypto.randomUUID();
+      const match = {
+        id,
+        bracket_type: "winners",
+        bracket_round: round,
+        round_number: round,
+        match_number: displayNumber++,
+        player1_id: null,
+        player2_id: null,
+        p1_score: 0,
+        p2_score: 0,
+        best_of: round === winnersRoundCount ? 5 : 3,
+        status: "pending",
+        winner_id: null,
+        loser_id: null,
+        next_match_winner_id: null,
+        next_match_winner_slot: null,
+        next_match_loser_id: null,
+        next_match_loser_slot: null,
+        stage_name: null,
+        is_reset: false
+      };
+
+      /* Primera ronda: Asignar participantes según el sorteo */
+      if (round === 1) {
+        const seed1 = seedOrder[i * 2];
+        const seed2 = seedOrder[i * 2 + 1];
+
+        match.player1_id = participants[seed1 - 1]?.id
+          ? String(participants[seed1 - 1].id)
+          : null;
+
+        match.player2_id = participants[seed2 - 1]?.id
+          ? String(participants[seed2 - 1].id)
+          : null;
+      }
+
+      currentRound.push(match);
+      matches.push(match);
+    }
+    winnersRounds.push(currentRound);
+  }
+
+  /* LOSERS BRACKET */
+  const loserRoundCount = winnersRoundCount * 2 - 2;
+
+  for (let round = 1; round <= loserRoundCount; round++) {
+    const count = size / Math.pow(2, Math.ceil(round / 2) + 1);
+    const currentRound = [];
+
+    for (let i = 0; i < count; i++) {
+      const match = {
+        id: crypto.randomUUID(),
+        bracket_type: "losers",
+        bracket_round: round,
+        round_number: round,
+        match_number: displayNumber++,
+        player1_id: null,
+        player2_id: null,
+        p1_score: 0,
+        p2_score: 0,
+        best_of: round === loserRoundCount ? 5 : 3,
+        status: "pending",
+        winner_id: null,
+        loser_id: null,
+        next_match_winner_id: null,
+        next_match_winner_slot: null,
+        next_match_loser_id: null,
+        next_match_loser_slot: null,
+        stage_name: null,
+        is_reset: false
+      };
+
+      currentRound.push(match);
+      matches.push(match);
+    }
+    losersRounds.push(currentRound);
+  }
+
+  /* CONEXIONES WINNERS */
+  for (let round = 0; round < winnersRoundCount; round++) {
+    const current = winnersRounds[round];
+    const next = winnersRounds[round + 1];
+
+    current.forEach((match, index) => {
+      /* Ganador -> Siguiente ronda de Winners */
+      if (next) {
+        const destination = next[Math.floor(index / 2)];
+        match.next_match_winner_id = destination.id;
+        match.next_match_winner_slot = index % 2 === 0 ? 1 : 2;
+      }
+
+      /* Perdedor -> Losers Bracket */
+      if (round === 0) {
+        const loserRound = losersRounds[0];
+        if (loserRound) {
+          const destination = loserRound[Math.floor(index / 2)];
+          match.next_match_loser_id = destination.id;
+          match.next_match_loser_slot = index % 2 === 0 ? 1 : 2;
+        }
+      } else {
+        const loserRoundIndex = round * 2 - 1;
+        const loserRound = losersRounds[loserRoundIndex];
+        if (loserRound) {
+          const destination = loserRound[loserRound.length - 1 - index];
+          match.next_match_loser_id = destination.id;
+          match.next_match_loser_slot = 1;
+        }
+      }
+    });
+  }
+
+  /* CONEXIONES LOSERS */
+  for (let r = 0; r < losersRounds.length; r++) {
+    const current = losersRounds[r];
+    const next = losersRounds[r + 1];
+
+    current.forEach((match, index) => {
+      if (!next) return;
+      const destination = next[Math.floor(index / 2)];
+      match.next_match_winner_id = destination.id;
+      match.next_match_winner_slot = index % 2 === 0 ? 1 : 2;
+    });
+  }
+
+  /* GRAND FINALS */
+  const winnersFinal = winnersRounds[winnersRounds.length - 1][0];
+  const losersFinal = losersRounds[losersRounds.length - 1][0];
+
+  const grandFinal1 = {
+    id: crypto.randomUUID(),
+    bracket_type: "grand_finals",
+    bracket_round: 1,
+    round_number: 1,
+    match_number: displayNumber++,
+    player1_id: null,
+    player2_id: null,
+    p1_score: 0,
+    p2_score: 0,
+    best_of: 5,
+    status: "pending",
+    winner_id: null,
+    loser_id: null,
+    next_match_winner_id: null,
+    next_match_winner_slot: null,
+    next_match_loser_id: null,
+    next_match_loser_slot: null,
+    stage_name: null,
+    is_reset: false
+  };
+
+  const grandFinal2 = {
+    id: crypto.randomUUID(),
+    bracket_type: "grand_finals",
+    bracket_round: 2,
+    round_number: 2,
+    match_number: displayNumber++,
+    player1_id: null,
+    player2_id: null,
+    p1_score: 0,
+    p2_score: 0,
+    best_of: 5,
+    status: "locked",
+    winner_id: null,
+    loser_id: null,
+    next_match_winner_id: null,
+    next_match_winner_slot: null,
+    next_match_loser_id: null,
+    next_match_loser_slot: null,
+    stage_name: null,
+    is_reset: true
+  };
+
+  winnersFinal.next_match_winner_id = grandFinal1.id;
+  winnersFinal.next_match_winner_slot = 1;
+
+  losersFinal.next_match_winner_id = grandFinal1.id;
+  losersFinal.next_match_winner_slot = 2;
+
+  winnersFinal.next_match_loser_id = losersFinal.id;
+  winnersFinal.next_match_loser_slot = 2;
+
+  grandFinal1.next_match_winner_id = grandFinal2.id;
+  grandFinal1.next_match_winner_slot = 1;
+
+  matches.push(grandFinal1, grandFinal2);
+
+  return { matches };
+}
+
+/* ==========================================
+   ORDEN DE SEEDS
+========================================== */
+
+function generateSeedOrder(size) {
+  let order = [1];
+  for (let current = 2; current <= size; current *= 2) {
+    const next = [];
+    const max = current;
+    order.forEach(seed => {
+      next.push(seed);
+      next.push(max + 1 - seed);
+    });
+    order = next;
+  }
+  return order;
+}
+
+/* ==========================================
+   RESOLUCIÓN DE BYES
+========================================== */
+
+async function resolveInitialByes() {
+  const { data, error } = await supabaseClient
+    .from("tournament_sets")
+    .select("*")
+    .eq("bracket_type", "winners")
+    .eq("bracket_round", 1);
+
+  if (error) throw error;
+
+  for (const match of data || []) {
+    if (match.player1_id && !match.player2_id) {
+      await completeBye(match, match.player1_id);
+    } else if (!match.player1_id && match.player2_id) {
+      await completeBye(match, match.player2_id);
+    }
+  }
+}
+
+async function completeBye(match, playerId) {
+  // 1. Marcar la partida actual como ganada por BYE
+  await supabaseClient
+    .from("tournament_sets")
+    .update({
+      winner_id: playerId,
+      status: "completed"
+    })
+    .eq("id", match.id);
+
+  // 2. Avanzar al ganador a la siguiente ronda si tiene un set asignado
+  if (match.next_match_winner_id) {
+    const slotField = match.next_match_winner_slot === 1 ? "player1_id" : "player2_id";
+    await supabaseClient
+      .from("tournament_sets")
+      .update({ [slotField]: playerId })
+      .eq("id", match.next_match_winner_id);
+  }
+}
